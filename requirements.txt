@@ -1,0 +1,7 @@
+psycopg[binary]
+pgvector
+sentence-transformers
+numpy
+python-dotenv
+langchain-text-splitters
+langchain-openai

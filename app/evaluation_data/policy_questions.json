@@ -1,0 +1,146 @@
+{
+  "document": "Policy-Document.pdf",
+  "page_numbering": "1-based physical PDF page numbers",
+  "questions": [
+    {
+      "id": "Q01",
+      "topic": "code_of_conduct",
+      "question": "What can happen if a staff member violates the college's code of conduct?",
+      "expected_answer": "Infringing the code may lead to disciplinary action. Employees are expected to follow it at work and outside work.",
+      "relevant_pages": [4]
+    },
+    {
+      "id": "Q02",
+      "topic": "college_vision",
+      "question": "What is St. Paul's College's vision for its students and community?",
+      "expected_answer": "The college aims to provide excellent higher education, especially to marginalized communities, and develop students as socially committed, academically proficient, digitally updated, and spiritually refined people.",
+      "relevant_pages": [4]
+    },
+    {
+      "id": "Q03",
+      "topic": "core_values",
+      "question": "Which core values does the college list?",
+      "expected_answer": "The core values are excellence, global competency, social conscience, integrity, and responsibility.",
+      "relevant_pages": [5]
+    },
+    {
+      "id": "Q04",
+      "topic": "principal_responsibilities",
+      "question": "Who has supreme authority for maintaining discipline at the college?",
+      "expected_answer": "The principal has supreme authority for maintaining discipline at the college.",
+      "relevant_pages": [5]
+    },
+    {
+      "id": "Q05",
+      "topic": "teacher_working_hours",
+      "question": "What working hours are prescribed for teachers, and when may they leave campus during those hours?",
+      "expected_answer": "Teachers' prescribed working hours are 8:15 a.m. to 3:30 p.m. They may leave campus during those hours only with the principal's approval, unless assigned duties elsewhere.",
+      "relevant_pages": [7]
+    },
+    {
+      "id": "Q06",
+      "topic": "student_grievance",
+      "question": "What sequence should a student follow to escalate a grievance?",
+      "expected_answer": "The student should first approach the class teacher, then the Head of Department if unsatisfied, and then the principal for a review if still unsatisfied.",
+      "relevant_pages": [11]
+    },
+    {
+      "id": "Q07",
+      "topic": "student_discipline",
+      "question": "Are students allowed to use mobile phones inside the campus?",
+      "expected_answer": "No. The policy says students are not allowed to use mobile phones inside the campus.",
+      "relevant_pages": [12]
+    },
+    {
+      "id": "Q08",
+      "topic": "attendance_requirement",
+      "question": "What attendance is required for a student to receive the annual attendance and progress certificate for university examinations?",
+      "expected_answer": "The student must attend at least three-fourths of the working days in the academic year, and the principal must consider the student's progress and conduct satisfactory.",
+      "relevant_pages": [14]
+    },
+    {
+      "id": "Q09",
+      "topic": "divyangjan_accessibility",
+      "question": "What accessibility facilities does the college list for differently abled students?",
+      "expected_answer": "The listed facilities include ramps, rails, elevators, wheelchairs, accessible toilet facilities, and special apps or software to support learning.",
+      "relevant_pages": [15]
+    },
+    {
+      "id": "Q10",
+      "topic": "anti_ragging",
+      "question": "What is the college's position on ragging?",
+      "expected_answer": "The college has a zero-tolerance policy toward ragging and describes it as a criminal offence under the cited UGC regulations.",
+      "relevant_pages": [17]
+    },
+    {
+      "id": "Q11",
+      "topic": "student_grievance_process",
+      "question": "How can a student submit a grievance, and how soon should it be forwarded to the appropriate committee?",
+      "expected_answer": "A student may use the college's online grievance portal or submit a written complaint to the Class Tutor, HoD, or Principal. The complaint should be forwarded to the appropriate Student Grievance Redressal Committee within 24 hours of receipt.",
+      "relevant_pages": [21]
+    },
+    {
+      "id": "Q12",
+      "topic": "placement_cell",
+      "question": "Does participating in placement activities guarantee a job?",
+      "expected_answer": "No. The policy says placement activities are a service to students and do not guarantee that a student will secure a job.",
+      "relevant_pages": [36]
+    },
+    {
+      "id": "Q13",
+      "topic": "student_assistance_scheme",
+      "question": "Who is the Student Assistance Scheme intended to help, and how are its funds raised?",
+      "expected_answer": "It is intended to provide financial aid to students from poor and economically backward communities. Funds are raised by collecting a small portion from staff each month.",
+      "relevant_pages": [37]
+    },
+    {
+      "id": "Q14",
+      "topic": "sexual_harassment_committee",
+      "question": "What are the main purposes of the Prevention of Sexual Harassment Committee?",
+      "expected_answer": "The committee works to prevent and redress sexual harassment, promote gender equality, ensure equal access to facilities and activities, and create a secure physical and social environment.",
+      "relevant_pages": [39]
+    },
+    {
+      "id": "Q15",
+      "topic": "research_policy_objectives",
+      "question": "What does the research policy say about plagiarism and research integrity?",
+      "expected_answer": "The policy calls for professionalism, integrity, and honesty in research and says plagiarism and similar malpractices should be discouraged and eliminated.",
+      "relevant_pages": [41]
+    },
+    {
+      "id": "Q16",
+      "topic": "research_policy_implementation",
+      "question": "How does the policy encourage students to participate in research?",
+      "expected_answer": "Students are encouraged to pursue original work as part of projects submitted to the University toward undergraduate or postgraduate degrees. Faculty and students are also encouraged to present findings at monthly Research Committee meetings.",
+      "relevant_pages": [42]
+    },
+    {
+      "id": "Q17",
+      "topic": "extension_activities",
+      "question": "Which groups support the college's extension activities, and which communities receive priority?",
+      "expected_answer": "Extension activities are conducted with support from the NSS unit and Social Outreach Club. The college gives priority to educationally, socially, and financially marginalized communities.",
+      "relevant_pages": [43]
+    },
+    {
+      "id": "Q18",
+      "topic": "environmental_policy",
+      "question": "What does the environmental policy say about plastic on campus?",
+      "expected_answer": "The policy bans all kinds of plastic materials within and on the premises of the campus.",
+      "relevant_pages": [45]
+    },
+    {
+      "id": "Q19",
+      "topic": "canteen_ordering",
+      "question": "What does the canteen policy require for lunch orders?",
+      "expected_answer": "Lunch orders need to be booked in advance, and late orders are discouraged.",
+      "relevant_pages": [46]
+    },
+    {
+      "id": "Q20",
+      "topic": "canteen_waste_management",
+      "question": "How does the canteen policy say its waste should be handled?",
+      "expected_answer": "Paper and plastic waste are separated and handed to Kudumbasree workers; food waste goes to the college biogas plant; and kitchen water is used for the college vegetable garden.",
+      "relevant_pages": [47]
+    }
+  ]
+}
