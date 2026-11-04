@@ -5,3 +5,4 @@ numpy
 python-dotenv
 langchain-text-splitters
 langchain-openai
+ragas>=0.3.9,<0.4

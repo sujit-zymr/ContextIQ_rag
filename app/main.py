@@ -49,6 +49,21 @@ def main():
         default=5
     )
 
+    evaluate_parser = subparsers.add_parser(
+        "evaluate",
+        help="Run Ragas metrics against the RAG pipeline"
+    )
+    evaluate_parser.add_argument(
+        "--top-k",
+        type=int,
+        default=5,
+        help="Number of chunks to retrieve per question"
+    )
+    evaluate_parser.add_argument(
+        "--dataset",
+        help="Score an existing evaluation JSON file instead of rerunning the pipeline"
+    )
+
     search_parser.add_argument(
         "question",
         help="Question to search"
@@ -107,6 +122,18 @@ def main():
         print(args.question)
         print("\nAnswer:\n")
         print(answer)
+
+    elif args.command == "evaluate":
+        from pathlib import Path
+        from app.evaluation.evaluate import run_evaluation
+
+        try:
+            run_evaluation(
+                dataset_path=Path(args.dataset) if args.dataset else None,
+                top_k=args.top_k,
+            )
+        except (RuntimeError, ValueError) as exc:
+            parser.error(str(exc))
 
 if __name__ == "__main__":
     main()

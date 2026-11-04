@@ -12,7 +12,7 @@ QUESTIONS_FILE = ROOT_DIR / "app" / "evaluation_data" / "policy_questions.json"
 OUTPUT_FILE = ROOT_DIR / "evaluation_data" / "ragas_dataset.json"
 
 
-def collect_evaluation_data():
+def collect_evaluation_data(top_k=5):
 
     with open(QUESTIONS_FILE, "r", encoding="utf-8") as file:
         evaluation_data = json.load(file)
@@ -32,7 +32,7 @@ def collect_evaluation_data():
         # 1. Retrieve chunks
         chunks = search_similar_chunks(
             question,
-            top_k=5
+            top_k=top_k
         )
 
         # 2. Extract retrieved contexts
@@ -79,6 +79,7 @@ def collect_evaluation_data():
         )
 
     print(f"\nDataset saved to: {OUTPUT_FILE}")
+    return dataset
 
 
 if __name__ == "__main__":
