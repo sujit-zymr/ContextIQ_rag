@@ -12,6 +12,7 @@ from app.database.chunk_repository import (
     save_document,
     document_exists
 )
+from app.observability import observation_span, set_span_output
 
 
 def extract_documents(file_path: Path) -> list[Document]:
@@ -61,7 +62,12 @@ def ingest_file(file_path):
         return None
 
     # Step 3: Extract documents
-    pages = extract_documents(file_path)
+    with observation_span(
+        "rag.ingestion.extraction",
+        input_value={"filename": file_path.name, "extension": file_path.suffix.lower()},
+    ) as span:
+        pages = extract_documents(file_path)
+        set_span_output(span, {"page_count": len(pages)})
 
     if not pages or not any(
         page.page_content.strip() for page in pages
@@ -69,11 +75,12 @@ def ingest_file(file_path):
         raise ValueError("Document contains no readable text")
 
     # Step 4: Chunk documents
-    chunks = chunk_documents(
-        pages,
-        chunk_size=200,
-        overlap=40
-    )
+    with observation_span(
+        "rag.ingestion.chunking",
+        input_value={"page_count": len(pages), "chunk_size": 200, "overlap": 40},
+    ) as span:
+        chunks = chunk_documents(pages, chunk_size=200, overlap=40)
+        set_span_output(span, {"chunk_count": len(chunks)})
 
     print(f"Generated {len(chunks)} chunks")
 
@@ -92,18 +99,30 @@ def ingest_file(file_path):
     ]
 
     # Step 7: Generate embeddings
-    embeddings = generate_embeddings(contents)
+    with observation_span(
+        "rag.ingestion.embeddings",
+        input_value={"chunk_count": len(contents), "model": "all-MiniLM-L6-v2"},
+        as_type="embedding",
+    ) as span:
+        embeddings = generate_embeddings(contents)
+        dimensions = int(embeddings.shape[-1]) if len(embeddings) else 0
+        set_span_output(span, {"embedding_count": len(embeddings), "dimensions": dimensions})
 
     print("Embeddings generated successfully")
 
     # Step 8: Store in PostgreSQL
-    document_id = save_document(
-        filename=file_path.name,
-        file_hash=file_hash,
-        chunks=contents,
-        embeddings=embeddings,
-        chunk_metadata=chunk_metadata
-    )
+    with observation_span(
+        "rag.ingestion.database_store",
+        input_value={"filename": file_path.name, "chunk_count": len(contents)},
+    ) as span:
+        document_id = save_document(
+            filename=file_path.name,
+            file_hash=file_hash,
+            chunks=contents,
+            embeddings=embeddings,
+            chunk_metadata=chunk_metadata
+        )
+        set_span_output(span, {"document_id": document_id, "stored_chunks": len(contents)})
 
     print("Document stored successfully")
 

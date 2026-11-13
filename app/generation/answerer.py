@@ -5,6 +5,13 @@ from langchain_core.messages import HumanMessage, SystemMessage
 from langchain_openai import ChatOpenAI
 
 from app.generation.prompt import build_rag_prompt
+from app.observability import (
+    langchain_callbacks,
+    observation_span,
+    redact_sensitive_text,
+    set_span_metadata,
+    set_span_output,
+)
 
 
 class AnswerGenerationError(Exception):
@@ -53,30 +60,47 @@ def generate_answer(question: str, chunks: list[dict]) -> str:
     ).strip()
     system_prompt, user_prompt = build_rag_prompt(question, usable_chunks)
 
-    try:
-        model = ChatOpenAI(
-            model=model_name,
-            base_url="https://integrate.api.nvidia.com/v1",
-            api_key=api_key,
-            temperature=0.6,
-            top_p=0.95,
-            max_tokens=4096,
-            extra_body={"reasoning_budget": 1024},
-        )
+    with observation_span(
+        "rag.answer_generation",
+        input_value={"question": question, "model": model_name},
+        as_type="chain",
+    ) as span:
+        try:
+            model = ChatOpenAI(
+                model=model_name,
+                base_url="https://integrate.api.nvidia.com/v1",
+                api_key=api_key,
+                temperature=0.6,
+                top_p=0.95,
+                max_tokens=4096,
+                extra_body={"reasoning_budget": 1024},
+            )
 
-        response = model.invoke([
-            SystemMessage(content=system_prompt),
-            HumanMessage(content=user_prompt),
-        ])
-    except Exception as exc:
-        # Include the underlying error while ensuring the API key is not shown.
-        error_detail = str(exc).replace(api_key, "[REDACTED]")
-        raise AnswerGenerationError(
-            f"NVIDIA request failed for model '{model_name}': {error_detail}"
-        ) from exc
+            response = model.invoke(
+                [
+                    SystemMessage(content=system_prompt),
+                    HumanMessage(content=user_prompt),
+                ],
+                config={"callbacks": langchain_callbacks()},
+            )
+        except Exception as exc:
+            # Include the underlying error while ensuring the API key is not shown.
+            error_detail = redact_sensitive_text(str(exc).replace(api_key, "[REDACTED]"))
+            raise AnswerGenerationError(
+                f"NVIDIA request failed for model '{model_name}': {error_detail}"
+            ) from exc
 
-    answer = _response_text(response.content)
-    if not answer:
-        raise AnswerGenerationError("NVIDIA returned an empty response.")
+        answer = _response_text(response.content)
+        if not answer:
+            raise AnswerGenerationError("NVIDIA returned an empty response.")
 
-    return answer
+        set_span_output(span, answer)
+        usage = getattr(response, "usage_metadata", None)
+        response_metadata = getattr(response, "response_metadata", None)
+        if not usage and isinstance(response_metadata, dict):
+            usage = response_metadata.get("token_usage")
+        if isinstance(usage, dict):
+            # Langfuse's callback captures generation data; preserve an explicit
+            # token count on this span when NVIDIA returns usage metadata.
+            set_span_metadata(span, {"model_usage": usage})
+        return answer

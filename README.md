@@ -1,1 +1,85 @@
 # ContextIQ_rag
+
+## Langfuse observability and Ragas evaluation
+
+The RAG CLI sends traces to Langfuse when `LANGFUSE_ENABLED=true` (default) and
+Langfuse project keys are configured. It traces document extraction, chunking,
+embeddings, database storage, query embedding, vector retrieval, and answer
+generation. LangChain callbacks record model generations, latency, errors, and
+provider token usage when NVIDIA returns usage data.
+
+Ragas evaluation runs four metrics: faithfulness, answer relevancy, context
+precision, and context recall. It writes a CSV with per-question scores and a
+JSON summary under `evaluation_data/ragas_results/`, then sends each score to
+Langfuse as `ragas_<metric>` attached to that sample's trace. If the dataset row
+contains `langfuse_trace_id` (or `trace_id`), its scores attach to that trace.
+Otherwise, evaluation creates a Langfuse trace for the question, retrieved
+contexts, answer, reference, and scores.
+
+### Install and configure
+
+Activate the project virtual environment and install the project dependencies:
+
+```bash
+source venv/bin/activate
+python -m pip install -r requirements.txt
+```
+
+Create a project in Langfuse Cloud (or use your own Langfuse v4.59+ deployment
+for the current Python SDK) and copy its project keys into the project `.env`:
+
+```env
+LANGFUSE_ENABLED=true
+LANGFUSE_PUBLIC_KEY=pk-lf-...
+LANGFUSE_SECRET_KEY=sk-lf-...
+LANGFUSE_BASE_URL=https://cloud.langfuse.com
+LANGFUSE_TRACING_ENVIRONMENT=development
+
+# The same NVIDIA key/model used by answer generation is used as the Ragas judge.
+NVIDIA_API_KEY=...
+NVIDIA_MODEL=nvidia/nemotron-3-nano-omni-30b-a3b-reasoning
+```
+
+Use the base URL for your Langfuse region or self-hosted deployment. Keep `.env`
+private and never commit it.
+
+### Run the RAG pipeline and verify the connection
+
+Start PostgreSQL and ingest at least one source document using the project's
+existing setup. Then run an answer request:
+
+```bash
+python -m app.main answer "What is the college's attendance requirement?"
+```
+
+Open the matching Langfuse project and look for the `rag.answer_request` trace
+and its child retrieval and generation observations. This verifies that the
+credentials and Langfuse endpoint work from the application environment.
+
+Run Ragas against the prepared JSON dataset:
+
+```bash
+python -m app.main evaluate --dataset evaluation_data/ragas_dataset.json
+```
+
+The output reports the result file paths and how many samples were linked to
+Langfuse traces. Each score appears on its corresponding trace in Langfuse.
+Override the result directory with `--output-dir` if needed.
+
+### Evaluation requirements and data handling
+
+- The evaluation JSON must be a non-empty array. Each row needs `user_input`,
+  `retrieved_contexts` (a list of strings), and `response`. `reference` is
+  needed for context precision and context recall. The existing dataset's
+  `question`, `contexts`, `answer`, and `expected_answer` aliases are accepted.
+- Ragas uses `NVIDIA_API_KEY` and `NVIDIA_MODEL` for judge calls. Those calls
+  send the question, answer, reference, and retrieved contexts to NVIDIA.
+- Answer relevancy reuses the local `all-MiniLM-L6-v2` embedding model. The
+  model may be downloaded the first time it is needed.
+- Langfuse export redacts common API-key patterns, labeled credentials, and
+  email addresses before sending span attributes. Review the redaction patterns
+  in `app/observability.py` for your data policy; pattern-based redaction cannot
+  guarantee removal of every sensitive value.
+- Tracing and score export fail open: Langfuse errors are logged and do not
+  prevent RAG or evaluation results from being produced. Set
+  `LANGFUSE_ENABLED=false` to disable tracing and score publishing.
