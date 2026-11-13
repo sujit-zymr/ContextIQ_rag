@@ -2,7 +2,8 @@
 import argparse
 
 from app.database.connection import init_db
-from app.ingestion.pipeline import ingest_file
+from app.ingestion.pipeline import ingest_file, reindex_document
+from app.database.chunk_repository import delete_document
 from app.retrieval.similarity_search import search_similar_chunks
 from app.generation.answerer import (
     AnswerGenerationError,
@@ -35,8 +36,25 @@ def main():
 
     ingest_parser.add_argument(
         "file",
-        help="Path to the text document"
+        help="Path to a PDF, TXT, DOCX, MD, or Markdown document"
     )
+    ingest_parser.add_argument("--title", help="Human readable document title")
+    ingest_parser.add_argument("--department", help="Department metadata value")
+    ingest_parser.add_argument("--version", help="Document version metadata value")
+    ingest_parser.add_argument(
+        "--permission", action="append", dest="permissions",
+        help="Permission label metadata; repeat to add multiple labels (not access control)",
+    )
+    ingest_parser.add_argument("--chunk-size", type=int, help="Chunk size in characters; default from RAG_CHUNK_SIZE or 200")
+    ingest_parser.add_argument("--chunk-overlap", type=int, help="Chunk overlap in characters; default from RAG_CHUNK_OVERLAP or 40")
+
+    reindex_parser = subparsers.add_parser("reindex", help="Re-extract and re-embed a stored document")
+    reindex_parser.add_argument("document_id", help="Document UUID returned by ingest")
+    reindex_parser.add_argument("--chunk-size", type=int)
+    reindex_parser.add_argument("--chunk-overlap", type=int)
+
+    delete_parser = subparsers.add_parser("delete", help="Delete a document and its chunks")
+    delete_parser.add_argument("document_id", help="Document UUID returned by ingest")
 
     # Search document
     search_parser = subparsers.add_parser("search")
@@ -95,10 +113,37 @@ def main():
             init_db()
 
             with observation_span("rag.ingest", input_value={"file": args.file}) as span:
-                document_id = ingest_file(args.file)
+                metadata = {
+                    key: value for key, value in {
+                        "title": args.title,
+                        "department": args.department,
+                        "version": args.version,
+                        "permissions": args.permissions,
+                    }.items() if value is not None
+                }
+                document_id = ingest_file(
+                    args.file,
+                    metadata=metadata,
+                    chunk_size=args.chunk_size,
+                    overlap=args.chunk_overlap,
+                )
                 set_span_output(span, {"document_id": document_id})
 
             print(f"Document ID: {document_id}")
+
+        elif args.command == "reindex":
+            init_db()
+            document_id = reindex_document(
+                args.document_id, chunk_size=args.chunk_size, overlap=args.chunk_overlap
+            )
+            print(f"Reindexed document: {document_id}")
+
+        elif args.command == "delete":
+            init_db()
+            if delete_document(args.document_id):
+                print(f"Deleted document and its chunks: {args.document_id}")
+            else:
+                parser.error(f"Document not found: {args.document_id}")
 
         elif args.command == "search":
 

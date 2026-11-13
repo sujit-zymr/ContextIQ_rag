@@ -27,9 +27,19 @@ def init_db():
             filename TEXT NOT NULL,
             file_hash TEXT NOT NULL,
             metadata JSONB DEFAULT '{}',
-            created_at TIMESTAMP DEFAULT NOW()
+            created_at TIMESTAMP DEFAULT NOW(),
+            source_path TEXT,
+            status TEXT NOT NULL DEFAULT 'completed',
+            status_message TEXT,
+            updated_at TIMESTAMP NOT NULL DEFAULT NOW()
         )
         """,
+
+        # Upgrade databases created by earlier versions of the project.
+        "ALTER TABLE documents ADD COLUMN IF NOT EXISTS source_path TEXT",
+        "ALTER TABLE documents ADD COLUMN IF NOT EXISTS status TEXT NOT NULL DEFAULT 'completed'",
+        "ALTER TABLE documents ADD COLUMN IF NOT EXISTS status_message TEXT",
+        "ALTER TABLE documents ADD COLUMN IF NOT EXISTS updated_at TIMESTAMP NOT NULL DEFAULT NOW()",
 
         """
         CREATE TABLE IF NOT EXISTS document_chunks (

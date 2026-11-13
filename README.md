@@ -8,6 +8,31 @@ embeddings, database storage, query embedding, vector retrieval, and answer
 generation. LangChain callbacks record model generations, latency, errors, and
 provider token usage when NVIDIA returns usage data.
 
+## Ingest, reindex, and delete documents
+
+Ingestion accepts PDF, TXT, DOCX, Markdown (`.md`), and `.markdown` files.
+Markdown headings and DOCX heading paragraphs are retained as section metadata.
+Set `RAG_CHUNK_SIZE` and `RAG_CHUNK_OVERLAP` in `.env` to configure defaults,
+or pass `--chunk-size` and `--chunk-overlap` to `ingest` or `reindex`:
+
+```bash
+python -m app.main ingest handbook.docx --title "Staff handbook" \
+  --department People --version 2026.1 --permission employees \
+  --chunk-size 500 --chunk-overlap 80
+python -m app.main reindex <document-uuid> --chunk-size 600 --chunk-overlap 100
+python -m app.main delete <document-uuid>
+```
+
+Document rows track `queued`, `processing`, `completed`, or `failed` status,
+with a failure message and update timestamp. Ingestion runs synchronously in
+the CLI, so `queued` is the initial database state rather than a background
+job queue. Department, version, title, and permission labels are stored as
+document and chunk metadata; permission labels are not access-control enforcement. Reindex
+uses the original file path saved at ingestion time, so that file must remain
+available at the same path. Reindexing swaps chunks and document metadata in a
+single database transaction after extraction and embedding finish, preserving
+the prior index if processing fails.
+
 Ragas evaluation runs four metrics: faithfulness, answer relevancy, context
 precision, and context recall. It writes a CSV with per-question scores and a
 JSON summary under `evaluation_data/ragas_results/`, then sends each score to
