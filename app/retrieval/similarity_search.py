@@ -44,8 +44,8 @@ def search_similar_chunks(question, top_k=5):
                     "filename": row[0],
                     "content": row[1],
                     "chunk_index": row[2],
-                    "metadata": row[3],
-                    "page": row[3].get("page") + 1 if row[3].get("page") is not None else None,
+                    "metadata": row[3] or {},
+                    "page": (row[3] or {}).get("page") + 1 if (row[3] or {}).get("page") is not None else None,
                     "similarity": float(row[4]),
                 }
                 for row in results
@@ -54,3 +54,60 @@ def search_similar_chunks(question, top_k=5):
 
         set_span_output(span, {"retrieved_count": len(chunks), "chunks": chunks})
         return chunks
+
+
+def search_full_text_chunks(question, top_k=5):
+    """Retrieve chunks using PostgreSQL's English full-text search ranking."""
+    if top_k <= 0:
+        raise ValueError("top_k must be positive")
+
+    with observation_span(
+        "rag.retrieval.full_text_search",
+        input_value={"question": question, "top_k": top_k, "configuration": "english"},
+        as_type="retriever",
+    ) as span:
+        with get_connection() as conn:
+            results = conn.execute(
+                """
+                WITH query AS (
+                    SELECT websearch_to_tsquery('english', %s) AS terms
+                )
+                SELECT
+                    d.filename,
+                    c.content,
+                    c.chunk_index,
+                    c.metadata,
+                    ts_rank_cd(c.search_vector, query.terms) AS score
+                FROM document_chunks c
+                JOIN documents d ON d.id = c.document_id
+                CROSS JOIN query
+                WHERE c.search_vector @@ query.terms
+                ORDER BY score DESC, c.document_id, c.chunk_index
+                LIMIT %s
+                """,
+                (question, top_k),
+            ).fetchall()
+
+        chunks = [
+            {
+                "filename": row[0],
+                "content": row[1],
+                "chunk_index": row[2],
+                "metadata": row[3] or {},
+                "page": (row[3] or {}).get("page") + 1 if (row[3] or {}).get("page") is not None else None,
+                "score": float(row[4]),
+                "retrieval_method": "full_text",
+            }
+            for row in results
+        ]
+        set_span_output(span, {"retrieved_count": len(chunks), "chunks": chunks})
+        return chunks
+
+
+def search_chunks(question, top_k=5, mode="vector"):
+    """Dispatch to a single retrieval method; fusion is added in the next step."""
+    if mode == "vector":
+        return search_similar_chunks(question, top_k)
+    if mode == "full-text":
+        return search_full_text_chunks(question, top_k)
+    raise ValueError("mode must be 'vector' or 'full-text'")

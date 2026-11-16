@@ -33,6 +33,19 @@ available at the same path. Reindexing swaps chunks and document metadata in a
 single database transaction after extraction and embedding finish, preserving
 the prior index if processing fails.
 
+PostgreSQL full-text search is also available with the English configuration
+and a GIN index. `init-db` adds the generated search vector to existing
+databases. Compare the standalone retrieval methods with:
+
+```bash
+python -m app.main search "attendance requirement" --search-mode vector
+python -m app.main search "attendance requirement" --search-mode full-text
+python -m app.main answer "attendance requirement" --search-mode full-text
+```
+
+The default remains vector search for now; combining both ranked result sets is
+the next retrieval substep.
+
 Ragas evaluation runs four metrics: faithfulness, answer relevancy, context
 precision, and context recall. It writes a CSV with per-question scores and a
 JSON summary under `evaluation_data/ragas_results/`, then sends each score to

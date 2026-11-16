@@ -49,10 +49,20 @@ def init_db():
             chunk_index INTEGER NOT NULL,
             content TEXT NOT NULL,
             embedding VECTOR(384),
+            search_vector TSVECTOR GENERATED ALWAYS AS (to_tsvector('english', content)) STORED,
             metadata JSONB DEFAULT '{}',
             created_at TIMESTAMP DEFAULT NOW(),
             UNIQUE(document_id, chunk_index)
         )
+        """,
+
+        # Add the generated full-text vector to existing installations too.
+        """ALTER TABLE document_chunks ADD COLUMN IF NOT EXISTS search_vector
+           TSVECTOR GENERATED ALWAYS AS (to_tsvector('english', content)) STORED""",
+
+        """
+        CREATE INDEX IF NOT EXISTS document_chunks_search_vector_idx
+        ON document_chunks USING GIN (search_vector)
         """,
 
         """

@@ -4,7 +4,7 @@ import argparse
 from app.database.connection import init_db
 from app.ingestion.pipeline import ingest_file, reindex_document
 from app.database.chunk_repository import delete_document
-from app.retrieval.similarity_search import search_similar_chunks
+from app.retrieval.similarity_search import search_chunks
 from app.generation.answerer import (
     AnswerGenerationError,
     generate_answer,
@@ -73,6 +73,10 @@ def main():
         type=int,
         default=5
     )
+    answer_parser.add_argument(
+        "--search-mode", choices=("vector", "full-text"), default="vector",
+        help="Retrieval method to use",
+    )
 
     search_parser.add_argument(
         "question",
@@ -98,6 +102,10 @@ def main():
         "--top-k",
         type=int,
         default=5
+    )
+    search_parser.add_argument(
+        "--search-mode", choices=("vector", "full-text"), default="vector",
+        help="Retrieval method to use",
     )
 
     args = parser.parse_args()
@@ -148,7 +156,7 @@ def main():
         elif args.command == "search":
 
             with observation_span("rag.search_request", input_value=args.question) as span:
-                results = search_similar_chunks(args.question, args.top_k)
+                results = search_chunks(args.question, args.top_k, args.search_mode)
                 set_span_output(span, results)
 
             print("\nRetrieved Context:\n")
@@ -158,13 +166,15 @@ def main():
                 print("File:", result["filename"])
                 print("Page:", result["page"])
                 print("Chunk:", result["chunk_index"])
-                print("Similarity:", round(result["similarity"], 4))
+                score = result.get("similarity", result.get("score"))
+                score_label = "Similarity" if args.search_mode == "vector" else "Full-text rank"
+                print(f"{score_label}:", round(score, 4) if score is not None else "n/a")
                 print("Content:", result["content"])
                 print("-" * 50)
 
         elif args.command == "answer":
             with observation_span("rag.answer_request", input_value=args.question) as span:
-                chunks = search_similar_chunks(args.question, args.top_k)
+                chunks = search_chunks(args.question, args.top_k, args.search_mode)
 
                 try:
                     answer = generate_answer(args.question, chunks)
