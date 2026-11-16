@@ -5,6 +5,7 @@ from langchain_core.messages import HumanMessage, SystemMessage
 from langchain_openai import ChatOpenAI
 
 from app.generation.prompt import build_rag_prompt
+from app.retrieval.evidence import INSUFFICIENT_EVIDENCE_RESPONSE, assess_evidence
 from app.observability import (
     langchain_callbacks,
     observation_span,
@@ -34,7 +35,7 @@ def _response_text(content) -> str:
 
     return ""
 
-def generate_answer(question: str, chunks: list[dict]) -> str:
+def generate_answer(question: str, chunks: list[dict], search_mode: str | None = None) -> str:
     load_dotenv()
 
     usable_chunks = [
@@ -42,8 +43,22 @@ def generate_answer(question: str, chunks: list[dict]) -> str:
         if chunk.get("content") and chunk["content"].strip()
     ]
 
-    if not usable_chunks:
-        return "I don't have enough information to answer from the retrieved context."
+    try:
+        evidence = assess_evidence(usable_chunks, search_mode)
+    except ValueError as exc:
+        raise AnswerGenerationError(f"Invalid evidence threshold configuration: {exc}") from exc
+    with observation_span(
+        "rag.evidence_gate",
+        input_value={
+            "retrieval_mode": evidence["mode"],
+            "retrieved_count": len(usable_chunks),
+            "best_score": evidence["best_score"],
+            "threshold": evidence["threshold"],
+        },
+    ) as evidence_span:
+        set_span_output(evidence_span, evidence)
+    if not evidence["sufficient"]:
+        return INSUFFICIENT_EVIDENCE_RESPONSE
 
     api_key = os.getenv("NVIDIA_API_KEY")
     if not api_key:

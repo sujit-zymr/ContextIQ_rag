@@ -43,8 +43,30 @@ python -m app.main search "attendance requirement" --search-mode full-text
 python -m app.main answer "attendance requirement" --search-mode full-text
 ```
 
-The default remains vector search for now; combining both ranked result sets is
-the next retrieval substep.
+Hybrid retrieval combines both ranked result sets with Reciprocal Rank Fusion
+(RRF); the CLI defaults to hybrid. Use `--search-mode vector` or
+`--search-mode full-text` to compare either method independently. Hybrid search
+fetches three times `top_k` candidates from each method, fuses ranks, reranks
+the fused candidates with `cross-encoder/ms-marco-MiniLM-L-6-v2`, then returns
+the requested `top_k` results. The first hybrid query may download the model.
+Set `RAG_RERANKER_MODEL` to use another Sentence Transformers CrossEncoder.
+If loading or scoring fails, retrieval logs the error and returns the RRF
+ranking with `reranked: false` in the result metadata.
+
+Answer generation checks the best retrieval score before calling NVIDIA. It
+returns an explicit insufficient-evidence response when the threshold is not
+met. Tune these starter thresholds in `.env` against the evaluation dataset:
+
+```env
+RAG_MIN_VECTOR_SIMILARITY=0.35
+RAG_MIN_FULL_TEXT_SCORE=0.02
+RAG_MIN_RERANK_SCORE=0.0
+RAG_MIN_RRF_SCORE=0.032
+```
+
+The applicable threshold and best score are recorded in the `rag.evidence_gate`
+Langfuse observation. Search-only requests still show the retrieved results;
+the evidence gate controls answer generation.
 
 Ragas evaluation runs four metrics: faithfulness, answer relevancy, context
 precision, and context recall. It writes a CSV with per-question scores and a

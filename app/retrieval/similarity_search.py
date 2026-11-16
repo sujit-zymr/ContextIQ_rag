@@ -2,6 +2,9 @@
 from app.database.connection import get_connection
 from app.ingestion.embedder import generate_query_embedding
 from app.observability import observation_span, set_span_output
+from app.retrieval.reranker import rerank_chunks
+
+RRF_K = 60
 
 
 def search_similar_chunks(question, top_k=5):
@@ -26,6 +29,7 @@ def search_similar_chunks(question, top_k=5):
                 results = conn.execute(
                     """
                     SELECT
+                        d.id,
                         d.filename,
                         c.content,
                         c.chunk_index,
@@ -41,12 +45,15 @@ def search_similar_chunks(question, top_k=5):
                 ).fetchall()
             chunks = [
                 {
-                    "filename": row[0],
-                    "content": row[1],
-                    "chunk_index": row[2],
-                    "metadata": row[3] or {},
-                    "page": (row[3] or {}).get("page") + 1 if (row[3] or {}).get("page") is not None else None,
-                    "similarity": float(row[4]),
+                    "document_id": str(row[0]),
+                    "filename": row[1],
+                    "content": row[2],
+                    "chunk_index": row[3],
+                    "metadata": row[4] or {},
+                    "page": (row[4] or {}).get("page") + 1 if (row[4] or {}).get("page") is not None else None,
+                    "similarity": float(row[5]),
+                    "retrieval_method": "vector",
+                    "score_type": "cosine_similarity",
                 }
                 for row in results
             ]
@@ -73,6 +80,7 @@ def search_full_text_chunks(question, top_k=5):
                     SELECT websearch_to_tsquery('english', %s) AS terms
                 )
                 SELECT
+                    d.id,
                     d.filename,
                     c.content,
                     c.chunk_index,
@@ -90,13 +98,15 @@ def search_full_text_chunks(question, top_k=5):
 
         chunks = [
             {
-                "filename": row[0],
-                "content": row[1],
-                "chunk_index": row[2],
-                "metadata": row[3] or {},
-                "page": (row[3] or {}).get("page") + 1 if (row[3] or {}).get("page") is not None else None,
-                "score": float(row[4]),
+                "document_id": str(row[0]),
+                "filename": row[1],
+                "content": row[2],
+                "chunk_index": row[3],
+                "metadata": row[4] or {},
+                "page": (row[4] or {}).get("page") + 1 if (row[4] or {}).get("page") is not None else None,
+                "score": float(row[5]),
                 "retrieval_method": "full_text",
+                "score_type": "full_text_rank",
             }
             for row in results
         ]
@@ -104,10 +114,74 @@ def search_full_text_chunks(question, top_k=5):
         return chunks
 
 
-def search_chunks(question, top_k=5, mode="vector"):
-    """Dispatch to a single retrieval method; fusion is added in the next step."""
+def _fuse_ranked_results(vector_results, full_text_results, top_k, rrf_k=RRF_K):
+    """Combine ranked lists with Reciprocal Rank Fusion (RRF)."""
+    combined = {}
+
+    def key_for(chunk):
+        document_id = chunk.get("document_id") or chunk.get("filename")
+        return str(document_id), chunk.get("chunk_index"), chunk.get("content")
+
+    for method, results in (("vector", vector_results), ("full_text", full_text_results)):
+        for rank, chunk in enumerate(results, start=1):
+            key = key_for(chunk)
+            fused = combined.setdefault(
+                key,
+                {
+                    **chunk,
+                    "score": 0.0,
+                    "retrieval_methods": [],
+                    "vector_similarity": None,
+                    "full_text_score": None,
+                },
+            )
+            fused["score"] += 1.0 / (rrf_k + rank)
+            if method not in fused["retrieval_methods"]:
+                fused["retrieval_methods"].append(method)
+            if method == "vector":
+                fused["vector_similarity"] = chunk.get("similarity")
+                fused["similarity"] = chunk.get("similarity")
+            else:
+                fused["full_text_score"] = chunk.get("score")
+
+    ranked = sorted(
+        combined.values(),
+        key=lambda item: (
+            -item["score"],
+            -(item["vector_similarity"] or 0.0),
+            -(item["full_text_score"] or 0.0),
+        ),
+    )
+    for item in ranked:
+        item["retrieval_method"] = "hybrid"
+    return ranked[:top_k]
+
+
+def search_chunks(question, top_k=5, mode="hybrid"):
+    """Search with vector, full-text, or RRF-fused hybrid retrieval."""
+    if top_k <= 0:
+        raise ValueError("top_k must be positive")
     if mode == "vector":
         return search_similar_chunks(question, top_k)
     if mode == "full-text":
         return search_full_text_chunks(question, top_k)
-    raise ValueError("mode must be 'vector' or 'full-text'")
+    if mode == "hybrid":
+        candidate_k = max(top_k * 3, top_k)
+        with observation_span(
+            "rag.retrieval.hybrid_fusion",
+            input_value={"top_k": top_k, "candidate_k": candidate_k, "algorithm": "rrf", "rrf_k": RRF_K},
+            as_type="retriever",
+        ) as span:
+            vector_results = search_similar_chunks(question, candidate_k)
+            full_text_results = search_full_text_chunks(question, candidate_k)
+            fused_candidates = _fuse_ranked_results(vector_results, full_text_results, candidate_k)
+            reranked = rerank_chunks(question, fused_candidates)
+            results = reranked[:top_k]
+            set_span_output(span, {
+                "retrieved_count": len(results),
+                "candidate_count": len(fused_candidates),
+                "reranked": bool(results) and all(item.get("reranked") for item in results),
+                "chunks": results,
+            })
+            return results
+    raise ValueError("mode must be 'vector', 'full-text', or 'hybrid'")

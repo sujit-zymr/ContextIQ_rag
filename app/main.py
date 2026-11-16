@@ -74,7 +74,7 @@ def main():
         default=5
     )
     answer_parser.add_argument(
-        "--search-mode", choices=("vector", "full-text"), default="vector",
+        "--search-mode", choices=("vector", "full-text", "hybrid"), default="hybrid",
         help="Retrieval method to use",
     )
 
@@ -104,7 +104,7 @@ def main():
         default=5
     )
     search_parser.add_argument(
-        "--search-mode", choices=("vector", "full-text"), default="vector",
+        "--search-mode", choices=("vector", "full-text", "hybrid"), default="hybrid",
         help="Retrieval method to use",
     )
 
@@ -167,7 +167,11 @@ def main():
                 print("Page:", result["page"])
                 print("Chunk:", result["chunk_index"])
                 score = result.get("similarity", result.get("score"))
-                score_label = "Similarity" if args.search_mode == "vector" else "Full-text rank"
+                score_label = {
+                    "vector": "Similarity",
+                    "full-text": "Full-text rank",
+                    "hybrid": "Reranker score" if result.get("reranked") else "RRF rank score",
+                }[args.search_mode]
                 print(f"{score_label}:", round(score, 4) if score is not None else "n/a")
                 print("Content:", result["content"])
                 print("-" * 50)
@@ -177,7 +181,7 @@ def main():
                 chunks = search_chunks(args.question, args.top_k, args.search_mode)
 
                 try:
-                    answer = generate_answer(args.question, chunks)
+                    answer = generate_answer(args.question, chunks, search_mode=args.search_mode)
                 except AnswerGenerationError as exc:
                     parser.error(str(exc))
                 set_span_output(span, {"answer": answer})
