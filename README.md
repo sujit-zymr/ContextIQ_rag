@@ -162,3 +162,41 @@ Override the result directory with `--output-dir` if needed.
 - Tracing and score export fail open: Langfuse errors are logged and do not
   prevent RAG or evaluation results from being produced. Set
   `LANGFUSE_ENABLED=false` to disable tracing and score publishing.
+
+## Backend conversation sessions
+
+The API lives under `app/api/` so it can later move into a dedicated server
+package when the repository becomes a client/server monorepo. It stores users,
+sessions, and message history in PostgreSQL. Creating a new session archives
+the user's prior active session without deleting it; activating an older
+session resumes it and archives the current one.
+
+Install the added backend dependencies, set a JWT signing secret, and start the
+API (startup applies the database schema):
+
+```bash
+python -m pip install -r requirements.txt
+openssl rand -hex 32  # put the output in JWT_SECRET_KEY in .env
+docker compose up -d postgres
+uvicorn app.api.main:app --reload --host 127.0.0.1 --port 8000
+```
+
+The API supports `POST /auth/register`, `POST /auth/token`, and `GET /auth/me`.
+Login uses OAuth2 form fields, with the email supplied as `username`. Send the
+returned bearer token to the session endpoints:
+
+```text
+POST /sessions
+GET  /sessions
+POST /sessions/{session_id}/activate
+GET  /sessions/{session_id}/messages
+POST /sessions/{session_id}/messages
+```
+
+Session ownership comes from the signed access token; the API checks ownership
+for each session and message request. Follow-up questions are resolved from
+the latest 12 stored messages. If context leaves multiple materially different
+interpretations, the API saves and returns a clarification question without
+running retrieval. Otherwise, it rewrites the question for retrieval, then
+saves the structured answer, validated citations, and abstention state.
+Interactive API documentation is available at `/docs` while the server runs.
