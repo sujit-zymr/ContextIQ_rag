@@ -1,6 +1,7 @@
 import hashlib
 import os
 import re
+from datetime import date
 from pathlib import Path
 
 from langchain_community.document_loaders import PyPDFLoader
@@ -102,6 +103,27 @@ def configured_chunking(chunk_size=None, overlap=None):
     return size, chunk_overlap
 
 
+def _validate_document_dates(metadata):
+    parsed_dates = {}
+    for field in ("effective_date", "expiry_date"):
+        value = metadata.get(field)
+        if value is None:
+            continue
+        try:
+            normalized = str(value).strip()
+            parsed = date.fromisoformat(normalized)
+            if parsed.isoformat() != normalized:
+                raise ValueError
+        except ValueError as exc:
+            raise ValueError(f"{field} must use ISO format YYYY-MM-DD") from exc
+        metadata[field] = parsed.isoformat()
+        parsed_dates[field] = parsed
+    effective = parsed_dates.get("effective_date")
+    expiry = parsed_dates.get("expiry_date")
+    if effective and expiry and expiry < effective:
+        raise ValueError("expiry_date must be the same as or later than effective_date")
+
+
 def ingest_file(file_path, *, metadata=None, chunk_size=None, overlap=None, document_id=None):
     file_path = Path(file_path).expanduser().resolve()
     if not file_path.is_file():
@@ -109,6 +131,7 @@ def ingest_file(file_path, *, metadata=None, chunk_size=None, overlap=None, docu
     size, chunk_overlap = configured_chunking(chunk_size, overlap)
     file_hash = hashlib.sha256(file_path.read_bytes()).hexdigest()
     document_metadata = dict(metadata or {})
+    _validate_document_dates(document_metadata)
     document_metadata.setdefault("title", file_path.stem)
     document_metadata["file_type"] = file_path.suffix.lower().lstrip(".")
     active_document_id = start_document_ingestion(

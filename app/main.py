@@ -41,6 +41,8 @@ def main():
     ingest_parser.add_argument("--title", help="Human readable document title")
     ingest_parser.add_argument("--department", help="Department metadata value")
     ingest_parser.add_argument("--version", help="Document version metadata value")
+    ingest_parser.add_argument("--effective-date", help="Date the document takes effect (YYYY-MM-DD)")
+    ingest_parser.add_argument("--expiry-date", help="Last date the document is effective (YYYY-MM-DD)")
     ingest_parser.add_argument(
         "--permission", action="append", dest="permissions",
         help="Permission label metadata; repeat to add multiple labels (not access control)",
@@ -126,6 +128,8 @@ def main():
                         "title": args.title,
                         "department": args.department,
                         "version": args.version,
+                        "effective_date": args.effective_date,
+                        "expiry_date": args.expiry_date,
                         "permissions": args.permissions,
                     }.items() if value is not None
                 }
@@ -166,6 +170,9 @@ def main():
                 print("File:", result["filename"])
                 print("Page:", result["page"])
                 print("Chunk:", result["chunk_index"])
+                print("Source status:", result.get("source_freshness", "unknown"))
+                if result.get("has_competing_versions"):
+                    print("Competing versions:", ", ".join(result["competing_versions"]))
                 score = result.get("similarity", result.get("score"))
                 score_label = {
                     "vector": "Similarity",
@@ -184,12 +191,34 @@ def main():
                     answer = generate_answer(args.question, chunks, search_mode=args.search_mode)
                 except AnswerGenerationError as exc:
                     parser.error(str(exc))
-                set_span_output(span, {"answer": answer})
+                set_span_output(span, answer)
 
             print("\nQuestion::\n")
             print(args.question)
             print("\nAnswer:\n")
-            print(answer)
+            print(answer["answer"])
+            if answer["citations"]:
+                print("\nCitations:")
+                for citation in answer["citations"]:
+                    location = []
+                    if citation.get("page") is not None:
+                        location.append(f"page {citation['page']}")
+                    if citation.get("chunk_index") is not None:
+                        location.append(f"chunk {citation['chunk_index']}")
+                    if citation.get("version") is not None:
+                        location.append(f"version {citation['version']}")
+                    if citation.get("source_freshness"):
+                        location.append(citation["source_freshness"])
+                    if citation.get("effective_date"):
+                        location.append(f"effective {citation['effective_date']}")
+                    if citation.get("expiry_date"):
+                        location.append(f"expires {citation['expiry_date']}")
+                    if citation.get("as_of_date"):
+                        location.append(f"checked {citation['as_of_date']}")
+                    suffix = f" ({', '.join(location)})" if location else ""
+                    print(f"[{citation['source_id']}] {citation['title']}{suffix}")
+                    if citation.get("has_competing_versions"):
+                        print("  Competing versions:", ", ".join(citation["competing_versions"]))
         elif args.command == "evaluate":
             run_ragas_evaluation(args.dataset, args.output_dir)
     finally:

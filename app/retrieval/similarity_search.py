@@ -3,6 +3,7 @@ from app.database.connection import get_connection
 from app.ingestion.embedder import generate_query_embedding
 from app.observability import observation_span, set_span_output
 from app.retrieval.reranker import rerank_chunks
+from app.retrieval.versioning import annotate_source_versions
 
 RRF_K = 60
 
@@ -43,7 +44,7 @@ def search_similar_chunks(question, top_k=5):
                     """,
                     (query_embedding, query_embedding, top_k),
                 ).fetchall()
-            chunks = [
+            chunks = annotate_source_versions([
                 {
                     "document_id": str(row[0]),
                     "filename": row[1],
@@ -56,7 +57,7 @@ def search_similar_chunks(question, top_k=5):
                     "score_type": "cosine_similarity",
                 }
                 for row in results
-            ]
+            ])
             set_span_output(search_span, chunks)
 
         set_span_output(span, {"retrieved_count": len(chunks), "chunks": chunks})
@@ -96,7 +97,7 @@ def search_full_text_chunks(question, top_k=5):
                 (question, top_k),
             ).fetchall()
 
-        chunks = [
+        chunks = annotate_source_versions([
             {
                 "document_id": str(row[0]),
                 "filename": row[1],
@@ -109,7 +110,7 @@ def search_full_text_chunks(question, top_k=5):
                 "score_type": "full_text_rank",
             }
             for row in results
-        ]
+        ])
         set_span_output(span, {"retrieved_count": len(chunks), "chunks": chunks})
         return chunks
 
@@ -176,7 +177,7 @@ def search_chunks(question, top_k=5, mode="hybrid"):
             full_text_results = search_full_text_chunks(question, candidate_k)
             fused_candidates = _fuse_ranked_results(vector_results, full_text_results, candidate_k)
             reranked = rerank_chunks(question, fused_candidates)
-            results = reranked[:top_k]
+            results = annotate_source_versions(reranked[:top_k])
             set_span_output(span, {
                 "retrieved_count": len(results),
                 "candidate_count": len(fused_candidates),

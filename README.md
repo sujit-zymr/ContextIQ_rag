@@ -17,7 +17,9 @@ or pass `--chunk-size` and `--chunk-overlap` to `ingest` or `reindex`:
 
 ```bash
 python -m app.main ingest handbook.docx --title "Staff handbook" \
-  --department People --version 2026.1 --permission employees \
+  --department People --version 2026.1 \
+  --effective-date 2026-07-01 --expiry-date 2027-06-30 \
+  --permission employees \
   --chunk-size 500 --chunk-overlap 80
 python -m app.main reindex <document-uuid> --chunk-size 600 --chunk-overlap 100
 python -m app.main delete <document-uuid>
@@ -67,6 +69,23 @@ RAG_MIN_RRF_SCORE=0.032
 The applicable threshold and best score are recorded in the `rag.evidence_gate`
 Langfuse observation. Search-only requests still show the retrieved results;
 the evidence gate controls answer generation.
+
+For supported answers, generation requests JSON containing an answer and inline
+source IDs such as `[S1]`. The application validates those IDs against the
+retrieved chunks and returns a structured result with the answer, abstention
+state, and canonical citation fields (document ID, filename, page, chunk,
+section, and version). Invalid, missing, or unverified citations cause an
+explicit abstention. The CLI prints the answer and its validated citations;
+evaluation data collection keeps the answer text and citations in separate
+fields.
+
+Ingestion accepts `--effective-date` and `--expiry-date` in `YYYY-MM-DD` format.
+Retrieved citations are marked `current`, `outdated`, `future`, `superseded`,
+or `undated`. For documents that belong to the same policy or manual, ingest
+each revision with the same `--title` and a distinct `--version` so retrieval
+can identify competing revisions. Effective dates take precedence over numeric
+version ordering; expired and future sources are identified explicitly in the
+prompt and citations.
 
 Ragas evaluation runs four metrics: faithfulness, answer relevancy, context
 precision, and context recall. It writes a CSV with per-question scores and a

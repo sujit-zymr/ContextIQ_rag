@@ -42,10 +42,11 @@ def collect_evaluation_data():
         ]
 
         # 3. Generate answer
-        response = generate_answer(
+        generated = generate_answer(
             question,
             chunks
         )
+        response = generated["answer"]
 
         # 4. Prepare evaluation record
         dataset.append({
@@ -54,6 +55,8 @@ def collect_evaluation_data():
             "user_input": question,
             "retrieved_contexts": retrieved_contexts,
             "response": response,
+            "citations": generated["citations"],
+            "abstained": generated["abstained"],
             "reference": item["expected_answer"],
             "relevant_pages": item["relevant_pages"],
             "retrieved_pages": [
@@ -67,6 +70,7 @@ def collect_evaluation_data():
         print(f"Expected pages: {item['relevant_pages']}")
         print(f"Retrieved pages: {dataset[-1]['retrieved_pages']}")
         print(f"Generated answer: {response}")
+        print(f"Validated citations: {generated['citations']}")
 
     OUTPUT_FILE.parent.mkdir(parents=True, exist_ok=True)
 
