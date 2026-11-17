@@ -1,146 +1,1153 @@
 {
   "document": "Policy-Document.pdf",
   "page_numbering": "1-based physical PDF page numbers",
+  "total_questions": 105,
   "questions": [
     {
       "id": "Q01",
       "topic": "code_of_conduct",
+      "category": "factual_retrieval",
       "question": "What can happen if a staff member violates the college's code of conduct?",
       "expected_answer": "Infringing the code may lead to disciplinary action. Employees are expected to follow it at work and outside work.",
-      "relevant_pages": [4]
+      "relevant_pages": [
+        4
+      ],
+      "should_abstain": false
     },
     {
       "id": "Q02",
       "topic": "college_vision",
+      "category": "conceptual",
       "question": "What is St. Paul's College's vision for its students and community?",
       "expected_answer": "The college aims to provide excellent higher education, especially to marginalized communities, and develop students as socially committed, academically proficient, digitally updated, and spiritually refined people.",
-      "relevant_pages": [4]
+      "relevant_pages": [
+        4
+      ],
+      "should_abstain": false
     },
     {
       "id": "Q03",
       "topic": "core_values",
+      "category": "factual_retrieval",
       "question": "Which core values does the college list?",
       "expected_answer": "The core values are excellence, global competency, social conscience, integrity, and responsibility.",
-      "relevant_pages": [5]
+      "relevant_pages": [
+        5
+      ],
+      "should_abstain": false
     },
     {
       "id": "Q04",
       "topic": "principal_responsibilities",
+      "category": "factual_retrieval",
       "question": "Who has supreme authority for maintaining discipline at the college?",
       "expected_answer": "The principal has supreme authority for maintaining discipline at the college.",
-      "relevant_pages": [5]
+      "relevant_pages": [
+        5
+      ],
+      "should_abstain": false
     },
     {
       "id": "Q05",
       "topic": "teacher_working_hours",
+      "category": "specific_detail",
       "question": "What working hours are prescribed for teachers, and when may they leave campus during those hours?",
       "expected_answer": "Teachers' prescribed working hours are 8:15 a.m. to 3:30 p.m. They may leave campus during those hours only with the principal's approval, unless assigned duties elsewhere.",
-      "relevant_pages": [7]
+      "relevant_pages": [
+        7
+      ],
+      "should_abstain": false
     },
     {
       "id": "Q06",
       "topic": "student_grievance",
+      "category": "conceptual",
       "question": "What sequence should a student follow to escalate a grievance?",
       "expected_answer": "The student should first approach the class teacher, then the Head of Department if unsatisfied, and then the principal for a review if still unsatisfied.",
-      "relevant_pages": [11]
+      "relevant_pages": [
+        11
+      ],
+      "should_abstain": false
     },
     {
       "id": "Q07",
       "topic": "student_discipline",
+      "category": "factual_retrieval",
       "question": "Are students allowed to use mobile phones inside the campus?",
       "expected_answer": "No. The policy says students are not allowed to use mobile phones inside the campus.",
-      "relevant_pages": [12]
+      "relevant_pages": [
+        12
+      ],
+      "should_abstain": false
     },
     {
       "id": "Q08",
       "topic": "attendance_requirement",
+      "category": "specific_detail",
       "question": "What attendance is required for a student to receive the annual attendance and progress certificate for university examinations?",
       "expected_answer": "The student must attend at least three-fourths of the working days in the academic year, and the principal must consider the student's progress and conduct satisfactory.",
-      "relevant_pages": [14]
+      "relevant_pages": [
+        14
+      ],
+      "should_abstain": false
     },
     {
       "id": "Q09",
       "topic": "divyangjan_accessibility",
+      "category": "factual_retrieval",
       "question": "What accessibility facilities does the college list for differently abled students?",
       "expected_answer": "The listed facilities include ramps, rails, elevators, wheelchairs, accessible toilet facilities, and special apps or software to support learning.",
-      "relevant_pages": [15]
+      "relevant_pages": [
+        15
+      ],
+      "should_abstain": false
     },
     {
       "id": "Q10",
       "topic": "anti_ragging",
+      "category": "conceptual",
       "question": "What is the college's position on ragging?",
       "expected_answer": "The college has a zero-tolerance policy toward ragging and describes it as a criminal offence under the cited UGC regulations.",
-      "relevant_pages": [17]
+      "relevant_pages": [
+        17
+      ],
+      "should_abstain": false
     },
     {
       "id": "Q11",
       "topic": "student_grievance_process",
+      "category": "specific_detail",
       "question": "How can a student submit a grievance, and how soon should it be forwarded to the appropriate committee?",
       "expected_answer": "A student may use the college's online grievance portal or submit a written complaint to the Class Tutor, HoD, or Principal. The complaint should be forwarded to the appropriate Student Grievance Redressal Committee within 24 hours of receipt.",
-      "relevant_pages": [21]
+      "relevant_pages": [
+        21
+      ],
+      "should_abstain": false
     },
     {
       "id": "Q12",
       "topic": "placement_cell",
+      "category": "conceptual",
       "question": "Does participating in placement activities guarantee a job?",
       "expected_answer": "No. The policy says placement activities are a service to students and do not guarantee that a student will secure a job.",
-      "relevant_pages": [36]
+      "relevant_pages": [
+        36
+      ],
+      "should_abstain": false
     },
     {
       "id": "Q13",
       "topic": "student_assistance_scheme",
+      "category": "factual_retrieval",
       "question": "Who is the Student Assistance Scheme intended to help, and how are its funds raised?",
       "expected_answer": "It is intended to provide financial aid to students from poor and economically backward communities. Funds are raised by collecting a small portion from staff each month.",
-      "relevant_pages": [37]
+      "relevant_pages": [
+        37
+      ],
+      "should_abstain": false
     },
     {
       "id": "Q14",
       "topic": "sexual_harassment_committee",
+      "category": "conceptual",
       "question": "What are the main purposes of the Prevention of Sexual Harassment Committee?",
       "expected_answer": "The committee works to prevent and redress sexual harassment, promote gender equality, ensure equal access to facilities and activities, and create a secure physical and social environment.",
-      "relevant_pages": [39]
+      "relevant_pages": [
+        39
+      ],
+      "should_abstain": false
     },
     {
       "id": "Q15",
       "topic": "research_policy_objectives",
+      "category": "conceptual",
       "question": "What does the research policy say about plagiarism and research integrity?",
       "expected_answer": "The policy calls for professionalism, integrity, and honesty in research and says plagiarism and similar malpractices should be discouraged and eliminated.",
-      "relevant_pages": [41]
+      "relevant_pages": [
+        41
+      ],
+      "should_abstain": false
     },
     {
       "id": "Q16",
       "topic": "research_policy_implementation",
+      "category": "conceptual",
       "question": "How does the policy encourage students to participate in research?",
       "expected_answer": "Students are encouraged to pursue original work as part of projects submitted to the University toward undergraduate or postgraduate degrees. Faculty and students are also encouraged to present findings at monthly Research Committee meetings.",
-      "relevant_pages": [42]
+      "relevant_pages": [
+        42
+      ],
+      "should_abstain": false
     },
     {
       "id": "Q17",
       "topic": "extension_activities",
+      "category": "factual_retrieval",
       "question": "Which groups support the college's extension activities, and which communities receive priority?",
       "expected_answer": "Extension activities are conducted with support from the NSS unit and Social Outreach Club. The college gives priority to educationally, socially, and financially marginalized communities.",
-      "relevant_pages": [43]
+      "relevant_pages": [
+        43
+      ],
+      "should_abstain": false
     },
     {
       "id": "Q18",
       "topic": "environmental_policy",
+      "category": "factual_retrieval",
       "question": "What does the environmental policy say about plastic on campus?",
       "expected_answer": "The policy bans all kinds of plastic materials within and on the premises of the campus.",
-      "relevant_pages": [45]
+      "relevant_pages": [
+        45
+      ],
+      "should_abstain": false
     },
     {
       "id": "Q19",
       "topic": "canteen_ordering",
+      "category": "specific_detail",
       "question": "What does the canteen policy require for lunch orders?",
       "expected_answer": "Lunch orders need to be booked in advance, and late orders are discouraged.",
-      "relevant_pages": [46]
+      "relevant_pages": [
+        46
+      ],
+      "should_abstain": false
     },
     {
       "id": "Q20",
       "topic": "canteen_waste_management",
+      "category": "specific_detail",
       "question": "How does the canteen policy say its waste should be handled?",
       "expected_answer": "Paper and plastic waste are separated and handed to Kudumbasree workers; food waste goes to the college biogas plant; and kitchen water is used for the college vegetable garden.",
-      "relevant_pages": [47]
+      "relevant_pages": [
+        47
+      ],
+      "should_abstain": false
+    },
+    {
+      "id": "Q21",
+      "topic": "motto",
+      "category": "factual_retrieval",
+      "question": "What is the official motto of St. Paul's College?",
+      "expected_answer": "The motto of the college is 'Life Nobly Lived'.",
+      "relevant_pages": [
+        5
+      ],
+      "should_abstain": false
+    },
+    {
+      "id": "Q22",
+      "topic": "administrative_staff_hours",
+      "category": "specific_detail",
+      "question": "What are the prescribed duty hours for non-teaching administrative staff?",
+      "expected_answer": "Non-teaching staff working in the college office or departments should remain on duty during college hours from 8:30 a.m. to 4:30 p.m.",
+      "relevant_pages": [
+        10
+      ],
+      "should_abstain": false
+    },
+    {
+      "id": "Q23",
+      "topic": "cell_phone_teachers",
+      "category": "factual_retrieval",
+      "question": "What restriction applies to teachers regarding cell phone usage during classes?",
+      "expected_answer": "Teachers must refrain from using cell phones while taking classes and in the examination hall.",
+      "relevant_pages": [
+        7
+      ],
+      "should_abstain": false
+    },
+    {
+      "id": "Q24",
+      "topic": "student_strikes",
+      "category": "factual_retrieval",
+      "question": "Does the college policy permit student strikes inside the campus?",
+      "expected_answer": "No. Strikes are strictly prohibited in the college campus and its premises, and nobody shall instigate or take part in any strike inside the campus.",
+      "relevant_pages": [
+        12
+      ],
+      "should_abstain": false
+    },
+    {
+      "id": "Q25",
+      "topic": "damage_compensation",
+      "category": "factual_retrieval",
+      "question": "How does the college recover compensation for loss or damage caused to buildings or furniture by violent student actions?",
+      "expected_answer": "Loss or damage caused to building, furniture, tools, and apparatus due to violent action of students will be made good by imposing compensation from their parents.",
+      "relevant_pages": [
+        12
+      ],
+      "should_abstain": false
+    },
+    {
+      "id": "Q26",
+      "topic": "student_union_objectives",
+      "category": "conceptual",
+      "question": "What are the key objectives of the college's Student Union?",
+      "expected_answer": "The objectives include training students in their citizenship duties, rights, and responsibilities; promoting character, leadership, efficiency, knowledge, and spirit of service; and organizing debates, seminars, work squads, and touring parties.",
+      "relevant_pages": [
+        13
+      ],
+      "should_abstain": false
+    },
+    {
+      "id": "Q27",
+      "topic": "working_day_sessions",
+      "category": "specific_detail",
+      "question": "How is a working day divided into periods across sessions?",
+      "expected_answer": "The working day is divided into 3 periods in the forenoon session and 2 periods in the afternoon session.",
+      "relevant_pages": [
+        13
+      ],
+      "should_abstain": false
+    },
+    {
+      "id": "Q28",
+      "topic": "attendance_loss_rule",
+      "category": "specific_detail",
+      "question": "What attendance penalty does a student incur if absent for one period in a session?",
+      "expected_answer": "If a student is absent in one period in any of the sessions, he/she loses half a day of attendance.",
+      "relevant_pages": [
+        13
+      ],
+      "should_abstain": false
+    },
+    {
+      "id": "Q29",
+      "topic": "internal_exams_count",
+      "category": "specific_detail",
+      "question": "How many internal examinations are conducted per semester to evaluate student progress?",
+      "expected_answer": "There are two internal exams conducted to evaluate the progress of students in each semester.",
+      "relevant_pages": [
+        14
+      ],
+      "should_abstain": false
+    },
+    {
+      "id": "Q30",
+      "topic": "pwd_act_admission",
+      "category": "factual_retrieval",
+      "question": "Under which statutory act and section does the college provide admission for differently abled students?",
+      "expected_answer": "The college provides admission as per Sec. 16 of the Persons with Disabilities (PWD) Act 2016.",
+      "relevant_pages": [
+        15
+      ],
+      "should_abstain": false
+    },
+    {
+      "id": "Q31",
+      "topic": "divyangjan_objectives",
+      "category": "conceptual",
+      "question": "What is the primary objective of the Divyangjan Policy regarding discrimination?",
+      "expected_answer": "To create a culture that avoids discrimination and exploitation of disabled/differently abled students and staff from all spheres of work and education.",
+      "relevant_pages": [
+        16
+      ],
+      "should_abstain": false
+    },
+    {
+      "id": "Q32",
+      "topic": "anti_ragging_helpline",
+      "category": "specific_detail",
+      "question": "What are the contact details for the National Anti-Ragging Helpline mentioned in the policy?",
+      "expected_answer": "The National Anti-Ragging Helpline is 1800-180-5522 (24x7 toll-free) and the email is helpline@antiragging.in.",
+      "relevant_pages": [
+        17
+      ],
+      "should_abstain": false
+    },
+    {
+      "id": "Q33",
+      "topic": "department_grievance_cell",
+      "category": "factual_retrieval",
+      "question": "Which body first attends to departmental level student grievances?",
+      "expected_answer": "The Departmental Student Grievance Redressal Committee attends to departmental level grievances.",
+      "relevant_pages": [
+        18
+      ],
+      "should_abstain": false
+    },
+    {
+      "id": "Q34",
+      "topic": "grievance_ascertainment_time",
+      "category": "specific_detail",
+      "question": "Within how many working days must a student grievance be ascertained and communicated with the aggrieved student?",
+      "expected_answer": "It is required to ascertain the grievance within 3 working days.",
+      "relevant_pages": [
+        21
+      ],
+      "should_abstain": false
+    },
+    {
+      "id": "Q35",
+      "topic": "employee_grievance_step2",
+      "category": "factual_retrieval",
+      "question": "Who can an employee discuss their grievance with in Step 2 of the employee grievance procedure?",
+      "expected_answer": "In Step 2, the employee may discuss their grievance in writing with the Principal or Vice Chairman.",
+      "relevant_pages": [
+        22
+      ],
+      "should_abstain": false
+    },
+    {
+      "id": "Q36",
+      "topic": "governing_body_referral",
+      "category": "specific_detail",
+      "question": "After how many working days of being unresolved by the College Grievance Redressal Committee is an employee grievance referred to the Governing Body?",
+      "expected_answer": "Grievances not resolved within 15 working days are referred to the Governing Body of the College.",
+      "relevant_pages": [
+        21
+      ],
+      "should_abstain": false
+    },
+    {
+      "id": "Q37",
+      "topic": "library_rules_enforcement",
+      "category": "factual_retrieval",
+      "question": "Who is responsible for ensuring the implementation of library rules?",
+      "expected_answer": "The main librarian ensures the implementation of library rules.",
+      "relevant_pages": [
+        25
+      ],
+      "should_abstain": false
+    },
+    {
+      "id": "Q38",
+      "topic": "password_security_policy",
+      "category": "factual_retrieval",
+      "question": "What does the IT infrastructure policy dictate regarding passwords for electronic devices?",
+      "expected_answer": "Passwords to all electronic devices must be kept secured and protected, and institutional accounts must only be accessed through safe networks.",
+      "relevant_pages": [
+        26
+      ],
+      "should_abstain": false
+    },
+    {
+      "id": "Q39",
+      "topic": "endowment_decision_committee",
+      "category": "factual_retrieval",
+      "question": "Who comprises the committee that decides endowment awardees each year?",
+      "expected_answer": "The committee comprises the Principal, the Teacher-in-Charge of Endowments, and the Heads of Departments.",
+      "relevant_pages": [
+        27
+      ],
+      "should_abstain": false
+    },
+    {
+      "id": "Q40",
+      "topic": "exam_entry_cutoff",
+      "category": "specific_detail",
+      "question": "How many minutes after the commencement of an examination is a student prohibited from entering the examination hall?",
+      "expected_answer": "No student shall be admitted to the examination hall 30 minutes after the commencement of the examination.",
+      "relevant_pages": [
+        34
+      ],
+      "should_abstain": false
+    },
+    {
+      "id": "Q41",
+      "topic": "exam_early_departure",
+      "category": "specific_detail",
+      "question": "When may a candidate leave the examination hall earlier than the scheduled close of the examination?",
+      "expected_answer": "Candidates who leave earlier than half an hour of the scheduled time must surrender their question paper and answer book, and are permitted to leave only after handing them over.",
+      "relevant_pages": [
+        34
+      ],
+      "should_abstain": false
+    },
+    {
+      "id": "Q42",
+      "topic": "retest_application_window",
+      "category": "specific_detail",
+      "question": "Within how many days from the last internal examination must students apply for a retest?",
+      "expected_answer": "Students wishing to avail a retest must apply in the prescribed form within 5 days from the date of the last internal examination.",
+      "relevant_pages": [
+        31
+      ],
+      "should_abstain": false
+    },
+    {
+      "id": "Q43",
+      "topic": "internal_assessment_retention",
+      "category": "specific_detail",
+      "question": "How long must all documents of internal assessments be kept in the college?",
+      "expected_answer": "All documents of internal assessments are to be kept in the college for one year.",
+      "relevant_pages": [
+        34
+      ],
+      "should_abstain": false
+    },
+    {
+      "id": "Q44",
+      "topic": "academic_council_mentoring",
+      "category": "conceptual",
+      "question": "What role does the Academic Council play regarding student mentoring?",
+      "expected_answer": "The Academic Council discusses mentoring-related issues and reviews the effectiveness of the mentoring system in supporting students.",
+      "relevant_pages": [
+        33
+      ],
+      "should_abstain": false
+    },
+    {
+      "id": "Q45",
+      "topic": "placement_cell_meetings",
+      "category": "specific_detail",
+      "question": "How frequently does the placement cell committee meet under normal circumstances?",
+      "expected_answer": "The cell committee meets twice in a semester, and on emergency whenever a placement activity is scheduled.",
+      "relevant_pages": [
+        35
+      ],
+      "should_abstain": false
+    },
+    {
+      "id": "Q46",
+      "topic": "placement_id_card",
+      "category": "factual_retrieval",
+      "question": "What document must students carry when participating in placement activities?",
+      "expected_answer": "Students participating in placement activities must carry their college identity card.",
+      "relevant_pages": [
+        36
+      ],
+      "should_abstain": false
+    },
+    {
+      "id": "Q47",
+      "topic": "declining_placement_offer",
+      "category": "factual_retrieval",
+      "question": "What must a student do if they decide not to join a company after accepting an offer to pursue higher studies?",
+      "expected_answer": "The student should inform both the placement cell and the company in writing.",
+      "relevant_pages": [
+        37
+      ],
+      "should_abstain": false
+    },
+    {
+      "id": "Q48",
+      "topic": "vincent_de_paul_establishment",
+      "category": "specific_detail",
+      "question": "When did the St. Vincent de Paul Society at the college begin and how many active members does it have?",
+      "expected_answer": "It began in 2012 and has 12 active members.",
+      "relevant_pages": [
+        38
+      ],
+      "should_abstain": false
+    },
+    {
+      "id": "Q49",
+      "topic": "poor_student_meals",
+      "category": "factual_retrieval",
+      "question": "Where are mid-day meals arranged for poor students through the assistance scheme?",
+      "expected_answer": "Mid-day meals are arranged for poor students in the college canteen.",
+      "relevant_pages": [
+        38
+      ],
+      "should_abstain": false
+    },
+    {
+      "id": "Q50",
+      "topic": "posh_committee_mandate",
+      "category": "conceptual",
+      "question": "Under which guidelines was the Prevention of Sexual Harassment Committee established?",
+      "expected_answer": "It was established as per the guidelines of UGC, NAAC, and the Supreme Court.",
+      "relevant_pages": [
+        39
+      ],
+      "should_abstain": false
+    },
+    {
+      "id": "Q51",
+      "topic": "posh_false_charges",
+      "category": "factual_retrieval",
+      "question": "Does the Sexual Harassment Committee have the power to recommend action against a person making false charges?",
+      "expected_answer": "Yes, the committee has the power to recommend action against any person found guilty of making false charges of sexual harassment against the accused.",
+      "relevant_pages": [
+        40
+      ],
+      "should_abstain": false
+    },
+    {
+      "id": "Q52",
+      "topic": "research_committee_meetings",
+      "category": "specific_detail",
+      "question": "How often does the Research Committee organize meetings for faculty and students to present findings?",
+      "expected_answer": "The Research Committee organizes monthly meetings for faculty and students to present their findings.",
+      "relevant_pages": [
+        42
+      ],
+      "should_abstain": false
+    },
+    {
+      "id": "Q53",
+      "topic": "research_proposal_screening",
+      "category": "conceptual",
+      "question": "Who screens and approves institutional, faculty, and student research proposals?",
+      "expected_answer": "All research proposals are screened and approved by the Research Committee, with suggested modifications where appropriate.",
+      "relevant_pages": [
+        42
+      ],
+      "should_abstain": false
+    },
+    {
+      "id": "Q54",
+      "topic": "campus_acreage",
+      "category": "specific_detail",
+      "question": "What is the total acreage of St. Paul's College campus mentioned in the environmental policy?",
+      "expected_answer": "The institution is spread across 15.72 acres.",
+      "relevant_pages": [
+        44
+      ],
+      "should_abstain": false
+    },
+    {
+      "id": "Q55",
+      "topic": "environmental_days_observed",
+      "category": "factual_retrieval",
+      "question": "Which environmental days does the college observe annually with tree and vegetable planting?",
+      "expected_answer": "The college observes World Environment Day and World Nature Conservation Day every year.",
+      "relevant_pages": [
+        44
+      ],
+      "should_abstain": false
+    },
+    {
+      "id": "Q56",
+      "topic": "paper_usage_reduction",
+      "category": "factual_retrieval",
+      "question": "How does the environmental policy propose reducing paper usage for academic work?",
+      "expected_answer": "By promoting online submission for academic work.",
+      "relevant_pages": [
+        45
+      ],
+      "should_abstain": false
+    },
+    {
+      "id": "Q57",
+      "topic": "canteen_snack_hours",
+      "category": "specific_detail",
+      "question": "What are the designated hours for afternoon tea and snacks in the canteen?",
+      "expected_answer": "Afternoon tea / snacks are scheduled from 3:00 p.m. to 4:00 p.m.",
+      "relevant_pages": [
+        47
+      ],
+      "should_abstain": false
+    },
+    {
+      "id": "Q58",
+      "topic": "canteen_capital_purchases",
+      "category": "factual_retrieval",
+      "question": "Who is the only person authorized to approve capital purchases for the canteen?",
+      "expected_answer": "The bursar is the only person authorized to approve all canteen capital purchases.",
+      "relevant_pages": [
+        46
+      ],
+      "should_abstain": false
+    },
+    {
+      "id": "Q59",
+      "topic": "canteen_cash_verification",
+      "category": "specific_detail",
+      "question": "How is money received from the canteen verified at the close of trading each day?",
+      "expected_answer": "All money from the canteen will be counted and signed for by two people at the close of trading each day.",
+      "relevant_pages": [
+        48
+      ],
+      "should_abstain": false
+    },
+    {
+      "id": "Q60",
+      "topic": "canteen_stock_take",
+      "category": "factual_retrieval",
+      "question": "Who prepares the annual canteen budget and conducts periodic stock takes?",
+      "expected_answer": "The canteen supervisor prepares the annual budget and performs a stock take at the end of each period.",
+      "relevant_pages": [
+        48
+      ],
+      "should_abstain": false
+    },
+    {
+      "id": "Q61",
+      "topic": "disciplinary_authority_appeal",
+      "category": "multi_hop",
+      "question": "If a student has a grievance that escalates beyond the HoD, who reviews it, and who holds supreme authority for discipline overall?",
+      "expected_answer": "The student approaches the Principal for a review, and the Principal also holds supreme authority for the maintenance of discipline of the college.",
+      "relevant_pages": [
+        5,
+        11
+      ],
+      "should_abstain": false
+    },
+    {
+      "id": "Q62",
+      "topic": "mobile_phone_policy_comparison",
+      "category": "multi_hop",
+      "question": "How do the rules regarding mobile phone usage differ between teachers and students?",
+      "expected_answer": "Teachers must refrain from using mobile phones while taking classes and in the examination hall, whereas students are completely prohibited from using mobile phones inside the campus pursuant to Kerala government regulations.",
+      "relevant_pages": [
+        7,
+        12
+      ],
+      "should_abstain": false
+    },
+    {
+      "id": "Q63",
+      "topic": "leave_and_attendance_link",
+      "category": "multi_hop",
+      "question": "How does taking leave affect a student's eligibility for university examinations?",
+      "expected_answer": "Taking leave reduces the number of attended working days, and students must secure at least three-fourths (75%) of working days in the academic year to receive the attendance and progress certificate required for university examinations.",
+      "relevant_pages": [
+        13,
+        14
+      ],
+      "should_abstain": false
+    },
+    {
+      "id": "Q64",
+      "topic": "food_waste_and_gardening",
+      "category": "multi_hop",
+      "question": "How are canteen kitchen water and organic waste integrated with campus environmental initiatives?",
+      "expected_answer": "Canteen food waste is fed into the college biogas plant, and kitchen water is reused for the college vegetable garden as part of campus environmental sustainability.",
+      "relevant_pages": [
+        45,
+        47
+      ],
+      "should_abstain": false
+    },
+    {
+      "id": "Q65",
+      "topic": "disability_support_and_admissions",
+      "category": "multi_hop",
+      "question": "What legal basis and physical provisions support differently abled students on campus?",
+      "expected_answer": "Admission is provided under Section 16 of the PWD Act 2016, supported by physical infrastructure including ramps, rails, elevators, accessible toilets, wheelchairs, and assistive learning software.",
+      "relevant_pages": [
+        15,
+        16
+      ],
+      "should_abstain": false
+    },
+    {
+      "id": "Q66",
+      "topic": "exam_absence_and_retest",
+      "category": "multi_hop",
+      "question": "What must a student do if they miss an internal test, and what is the procedure to avail a retest?",
+      "expected_answer": "A student who cannot attend tests must obtain prior sanction from the Principal, and apply for a retest in the prescribed form within 5 days of the last internal exam.",
+      "relevant_pages": [
+        14,
+        31
+      ],
+      "should_abstain": false
+    },
+    {
+      "id": "Q67",
+      "topic": "student_aid_and_food",
+      "category": "multi_hop",
+      "question": "How do staff contributions assist economically disadvantaged students with daily nutrition on campus?",
+      "expected_answer": "Staff contribute a small portion of their salary monthly to the Student Assistance Scheme / St. Vincent de Paul Society, which funds mid-day meals for poor students in the college canteen.",
+      "relevant_pages": [
+        37,
+        38
+      ],
+      "should_abstain": false
+    },
+    {
+      "id": "Q68",
+      "topic": "research_integrity_and_presentation",
+      "category": "multi_hop",
+      "question": "What ethical requirements and internal forums exist for faculty and student researchers?",
+      "expected_answer": "Researchers must adhere to professionalism, honesty, and eliminate plagiarism, and they are encouraged to present their work in monthly Research Committee meetings before external publication.",
+      "relevant_pages": [
+        41,
+        42
+      ],
+      "should_abstain": false
+    },
+    {
+      "id": "Q69",
+      "topic": "vehicle_restrictions_multihop",
+      "category": "multi_hop",
+      "question": "Where are two-wheelers allowed for students, and what does the environmental policy encourage regarding transport?",
+      "expected_answer": "Two-wheelers must only be parked in the parking space near the front gate and are prohibited elsewhere inside campus, while the environmental policy encourages car-sharing and vehicle-sharing.",
+      "relevant_pages": [
+        12,
+        45
+      ],
+      "should_abstain": false
+    },
+    {
+      "id": "Q70",
+      "topic": "grievance_committee_hierarchy",
+      "category": "multi_hop",
+      "question": "What is the complete hierarchy for resolving an employee grievance from Step 1 to final referral?",
+      "expected_answer": "Step 1 is discussion with the immediate supervisor/HoD; Step 2 is written discussion with the Principal/Vice Chairman; unresolved matters go to the College Grievance Redressal Committee (within 10 days) and finally to the Governing Body (after 15 days).",
+      "relevant_pages": [
+        21,
+        22
+      ],
+      "should_abstain": false
+    },
+    {
+      "id": "Q71",
+      "topic": "teacher_code_external_work",
+      "category": "contextual",
+      "question": "Under what circumstance does the code of conduct forbid teachers from taking external employment?",
+      "expected_answer": "Teachers must refrain from external employment that may impede the quality of learning or interfere with their professional commitments to the institution.",
+      "relevant_pages": [
+        7
+      ],
+      "should_abstain": false
+    },
+    {
+      "id": "Q72",
+      "topic": "unauthorized_pamphlets",
+      "category": "contextual",
+      "question": "Under what condition may notices, leaflets, or banners be circulated inside the campus?",
+      "expected_answer": "They may only be distributed or exhibited with the prior written permission of the Principal.",
+      "relevant_pages": [
+        12
+      ],
+      "should_abstain": false
+    },
+    {
+      "id": "Q73",
+      "topic": "medical_certificate_attendance",
+      "category": "contextual",
+      "question": "Does submitting a medical certificate grant a student an automatic right to claim attendance?",
+      "expected_answer": "No. The policy explicitly specifies that producing a medical certificate for the time of absence is not a right to claim attendance.",
+      "relevant_pages": [
+        12
+      ],
+      "should_abstain": false
+    },
+    {
+      "id": "Q74",
+      "topic": "exam_id_verification",
+      "category": "contextual",
+      "question": "What must examination invigilators verify before signing students' answer books?",
+      "expected_answer": "Invigilators must check the identity cards of students and sign the answer books only if all details are correct.",
+      "relevant_pages": [
+        29
+      ],
+      "should_abstain": false
+    },
+    {
+      "id": "Q75",
+      "topic": "mentoring_critical_issues",
+      "category": "contextual",
+      "question": "How are critical issues identified during student mentoring handled by the mentor?",
+      "expected_answer": "Critical issues identified through mentoring counselling are brought to the notice of the Head of the Department.",
+      "relevant_pages": [
+        32
+      ],
+      "should_abstain": false
+    },
+    {
+      "id": "Q76",
+      "topic": "canteen_late_orders",
+      "category": "contextual",
+      "question": "Why does the canteen require lunch orders to be booked in advance rather than on demand?",
+      "expected_answer": "To operate as a viable, effective service with nutritious meal preparation and minimal food wastage; late orders are discouraged.",
+      "relevant_pages": [
+        46
+      ],
+      "should_abstain": false
+    },
+    {
+      "id": "Q77",
+      "topic": "plastic_ban_scope",
+      "category": "contextual",
+      "question": "What is the geographic scope of the plastic ban enacted by the college environmental policy?",
+      "expected_answer": "The ban covers all kinds of plastic materials within and on the premises of the entire campus.",
+      "relevant_pages": [
+        45
+      ],
+      "should_abstain": false
+    },
+    {
+      "id": "Q78",
+      "topic": "library_password_responsibility",
+      "category": "contextual",
+      "question": "Who is responsible for the security of credentials used to access electronic library resources?",
+      "expected_answer": "Individual users are responsible for keeping passwords to all electronic devices secured and protected.",
+      "relevant_pages": [
+        26
+      ],
+      "should_abstain": false
+    },
+    {
+      "id": "Q79",
+      "topic": "extension_outreach_priority",
+      "category": "contextual",
+      "question": "Why does the college prioritize marginalized communities in its outreach programmes?",
+      "expected_answer": "In alignment with the college vision to provide higher education opportunities and social commitment to educationally, socially, and financially marginalized groups.",
+      "relevant_pages": [
+        4,
+        43
+      ],
+      "should_abstain": false
+    },
+    {
+      "id": "Q80",
+      "topic": "anti_ragging_zero_tolerance",
+      "category": "contextual",
+      "question": "What legal consequences can a student face if found engaging in ragging on campus?",
+      "expected_answer": "Ragging is treated as a criminal offence under UGC 2009 regulations, leading to summary punishment, suspension, or dismissal from the college.",
+      "relevant_pages": [
+        13,
+        17
+      ],
+      "should_abstain": false
+    },
+    {
+      "id": "Q81",
+      "topic": "posh_committee_quorum",
+      "category": "specific_detail",
+      "question": "What is the composition range for teaching staff members in college statutory committees?",
+      "expected_answer": "Teaching staff of the college typically comprise 7 to 11 members nominated by the authorities.",
+      "relevant_pages": [
+        23
+      ],
+      "should_abstain": false
+    },
+    {
+      "id": "Q82",
+      "topic": "exam_attendance_signature",
+      "category": "specific_detail",
+      "question": "What must students sign during every internal or university examination?",
+      "expected_answer": "Students must sign the attendance sheet during every examination.",
+      "relevant_pages": [
+        30
+      ],
+      "should_abstain": false
+    },
+    {
+      "id": "Q83",
+      "topic": "exam_hall_seating_time",
+      "category": "specific_detail",
+      "question": "How many minutes early should students be seated in the examination hall before commencement?",
+      "expected_answer": "Students should be seated in the examination hall at least 5 minutes early before commencement.",
+      "relevant_pages": [
+        30
+      ],
+      "should_abstain": false
+    },
+    {
+      "id": "Q84",
+      "topic": "academic_council_chair",
+      "category": "specific_detail",
+      "question": "Who serves as the Chairperson of the college Academic Council?",
+      "expected_answer": "The Principal of the College serves as the Chairperson of the Academic Council.",
+      "relevant_pages": [
+        33
+      ],
+      "should_abstain": false
+    },
+    {
+      "id": "Q85",
+      "topic": "endowment_awardees_timing",
+      "category": "specific_detail",
+      "question": "How frequently are endowment and scholarship awardees decided by the committee?",
+      "expected_answer": "Every year the awardees are decided by the endowment committee.",
+      "relevant_pages": [
+        27
+      ],
+      "should_abstain": false
+    },
+    {
+      "id": "Q86",
+      "topic": "kudumbasree_waste_partnership",
+      "category": "specific_detail",
+      "question": "Which workers receive segregated paper and plastic waste from the canteen?",
+      "expected_answer": "Kudumbasree workers receive segregated paper and plastic waste from the canteen.",
+      "relevant_pages": [
+        48
+      ],
+      "should_abstain": false
+    },
+    {
+      "id": "Q87",
+      "topic": "canteen_hygiene_standards",
+      "category": "specific_detail",
+      "question": "Under which regulatory standards must the canteen food preparation and hygiene function?",
+      "expected_answer": "The canteen functions strictly in accordance with Food & Safety Standards.",
+      "relevant_pages": [
+        47
+      ],
+      "should_abstain": false
+    },
+    {
+      "id": "Q88",
+      "topic": "rosary_devotion_month",
+      "category": "specific_detail",
+      "question": "In which month do St. Vincent de Paul Society members conduct the ten-day Rosary of Divine Mercy?",
+      "expected_answer": "In October, members steer a ten-day rosary devotion.",
+      "relevant_pages": [
+        38
+      ],
+      "should_abstain": false
+    },
+    {
+      "id": "Q89",
+      "topic": "grievance_portal_submission",
+      "category": "specific_detail",
+      "question": "Within how many hours must a student complaint be forwarded to the Student Grievance Redressal Committee?",
+      "expected_answer": "The complaint should be forwarded within 24 hours of receipt.",
+      "relevant_pages": [
+        21
+      ],
+      "should_abstain": false
+    },
+    {
+      "id": "Q90",
+      "topic": "herbal_garden_preservation",
+      "category": "specific_detail",
+      "question": "Which specific botanical feature does the campus code of conduct obligate the community to preserve and maintain?",
+      "expected_answer": "The community is obligated to preserve and maintain an herbal garden.",
+      "relevant_pages": [
+        10
+      ],
+      "should_abstain": false
+    },
+    {
+      "id": "Q91",
+      "topic": "mba_tuition_fees",
+      "category": "unanswerable",
+      "question": "What is the exact annual tuition fee for the Master of Business Administration (MBA) program at St. Paul's College?",
+      "expected_answer": "I don't have enough evidence in the retrieved documents to answer that question.",
+      "relevant_pages": [],
+      "should_abstain": true
+    },
+    {
+      "id": "Q92",
+      "topic": "hostel_curfew_hours",
+      "category": "unanswerable",
+      "question": "What is the evening curfew time for male students staying in the on-campus hostel?",
+      "expected_answer": "I don't have enough evidence in the retrieved documents to answer that question.",
+      "relevant_pages": [],
+      "should_abstain": true
+    },
+    {
+      "id": "Q93",
+      "topic": "bus_transport_routes",
+      "category": "unanswerable",
+      "question": "What are the designated bus route stops and timings for college transportation from Aluva to Kalamassery?",
+      "expected_answer": "I don't have enough evidence in the retrieved documents to answer that question.",
+      "relevant_pages": [],
+      "should_abstain": true
+    },
+    {
+      "id": "Q94",
+      "topic": "sports_scholarship_stipend",
+      "category": "unanswerable",
+      "question": "How much monthly stipend is paid to state-level cricket players under the college sports quota?",
+      "expected_answer": "I don't have enough evidence in the retrieved documents to answer that question.",
+      "relevant_pages": [],
+      "should_abstain": true
+    },
+    {
+      "id": "Q95",
+      "topic": "canteen_preorder_refund",
+      "category": "unanswerable",
+      "question": "What is the refund percentage if a student cancels a booked canteen lunch order two hours before lunch?",
+      "expected_answer": "I don't have enough evidence in the retrieved documents to answer that question.",
+      "relevant_pages": [],
+      "should_abstain": true
+    },
+    {
+      "id": "Q96",
+      "topic": "faculty_salary_scale",
+      "category": "unanswerable",
+      "question": "What is the 7th UGC Pay Commission basic pay scale for Associate Professors at the college?",
+      "expected_answer": "I don't have enough evidence in the retrieved documents to answer that question.",
+      "relevant_pages": [],
+      "should_abstain": true
+    },
+    {
+      "id": "Q97",
+      "topic": "campus_pet_policy",
+      "category": "unanswerable",
+      "question": "Are residential students permitted to keep certified emotional support dogs inside campus dormitories?",
+      "expected_answer": "I don't have enough evidence in the retrieved documents to answer that question.",
+      "relevant_pages": [],
+      "should_abstain": true
+    },
+    {
+      "id": "Q98",
+      "topic": "harvard_exchange_program",
+      "category": "unanswerable",
+      "question": "What minimum GPA is required to apply for the student exchange semester program with Harvard University?",
+      "expected_answer": "I don't have enough evidence in the retrieved documents to answer that question.",
+      "relevant_pages": [],
+      "should_abstain": true
+    },
+    {
+      "id": "Q99",
+      "topic": "patent_royalty_share",
+      "category": "unanswerable",
+      "question": "What percentage of commercial patent licensing royalties does the faculty inventor retain versus the college trust?",
+      "expected_answer": "I don't have enough evidence in the retrieved documents to answer that question.",
+      "relevant_pages": [],
+      "should_abstain": true
+    },
+    {
+      "id": "Q100",
+      "topic": "gymnasium_membership_fee",
+      "category": "unanswerable",
+      "question": "How much is the semester fee for students to access the campus air-conditioned fitness center and swimming pool?",
+      "expected_answer": "I don't have enough evidence in the retrieved documents to answer that question.",
+      "relevant_pages": [],
+      "should_abstain": true
+    },
+    {
+      "id": "Q101",
+      "topic": "campus_wifi_speed",
+      "category": "unanswerable",
+      "question": "What is the dedicated symmetrical fiber optic bandwidth in Gbps connecting the computer labs?",
+      "expected_answer": "I don't have enough evidence in the retrieved documents to answer that question.",
+      "relevant_pages": [],
+      "should_abstain": true
+    },
+    {
+      "id": "Q102",
+      "topic": "uniform_tailor_vendor",
+      "category": "unanswerable",
+      "question": "Which approved external tailoring agency supplies standardized laboratory coats to chemistry students?",
+      "expected_answer": "I don't have enough evidence in the retrieved documents to answer that question.",
+      "relevant_pages": [],
+      "should_abstain": true
+    },
+    {
+      "id": "Q103",
+      "topic": "acl_confidential_payroll",
+      "category": "acl_test",
+      "question": "What are the confidential executive leadership bonuses recorded in the restricted finance addendum?",
+      "expected_answer": "I don't have enough evidence in the retrieved documents to answer that question.",
+      "relevant_pages": [],
+      "should_abstain": true,
+      "forbidden_document_ids": [
+        "restricted-finance-payroll-2026"
+      ]
+    },
+    {
+      "id": "Q104",
+      "topic": "acl_board_minutes",
+      "category": "acl_test",
+      "question": "What private property acquisition discussions occurred in the closed-door trustee board session?",
+      "expected_answer": "I don't have enough evidence in the retrieved documents to answer that question.",
+      "relevant_pages": [],
+      "should_abstain": true,
+      "forbidden_document_ids": [
+        "restricted-board-minutes-confidential"
+      ]
+    },
+    {
+      "id": "Q105",
+      "topic": "acl_sealed_investigation",
+      "category": "acl_test",
+      "question": "What was the sealed inquiry finding regarding the external audit investigation in the restricted repository?",
+      "expected_answer": "I don't have enough evidence in the retrieved documents to answer that question.",
+      "relevant_pages": [],
+      "should_abstain": true,
+      "forbidden_document_ids": [
+        "restricted-audit-inquiry-sealed"
+      ]
     }
   ]
 }

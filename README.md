@@ -87,8 +87,10 @@ can identify competing revisions. Effective dates take precedence over numeric
 version ordering; expired and future sources are identified explicitly in the
 prompt and citations.
 
-Ragas evaluation runs four metrics: faithfulness, answer relevancy, context
-precision, and context recall. It writes a CSV with per-question scores and a
+Ragas evaluation runs five metrics: faithfulness, answer relevancy, context
+precision, context recall, and answer correctness. It also reports Recall@5,
+MRR, nDCG@5, citation correctness, abstention quality, and ACL leakage when
+the dataset contains the required labels. It writes a CSV with per-question scores and a
 JSON summary under `evaluation_data/ragas_results/`, then sends each score to
 Langfuse as `ragas_<metric>` attached to that sample's trace. If the dataset row
 contains `langfuse_trace_id` (or `trace_id`), its scores attach to that trace.
@@ -141,6 +143,23 @@ Run Ragas against the prepared JSON dataset:
 python -m app.main evaluate --dataset evaluation_data/ragas_dataset.json
 ```
 
+Capture the current implementation as a reproducible baseline before tuning.
+The baseline file is immutable; choose another output directory to save a
+different baseline. Use `--enforce-quality-gate` to return a nonzero status
+after a report is saved if the dataset or thresholds do not pass:
+
+```bash
+python -m app.main evaluate --dataset evaluation_data/ragas_dataset.json --save-baseline
+python -m app.main evaluate --dataset evaluation_data/ragas_dataset.json --enforce-quality-gate
+```
+
+The summary records dataset SHA-256, Git commit, sample/category counts, metric
+coverage, per-category averages, configured thresholds, and gate results.
+Set `RAG_EVAL_MIN_RECALL_AT_5`, `RAG_EVAL_MIN_MRR`,
+`RAG_EVAL_MIN_NDCG_AT_5`, `RAG_EVAL_MIN_FAITHFULNESS`,
+`RAG_EVAL_MIN_ANSWER_CORRECTNESS`, `RAG_EVAL_MIN_ABSTENTION_QUALITY`, and
+`RAG_EVAL_MAX_ACL_LEAKAGE` to tune the initial gate thresholds.
+
 The output reports the result file paths and how many samples were linked to
 Langfuse traces. Each score appears on its corresponding trace in Langfuse.
 Override the result directory with `--output-dir` if needed.
@@ -156,9 +175,11 @@ Override the result directory with `--output-dir` if needed.
 - Answer relevancy reuses the local `all-MiniLM-L6-v2` embedding model. The
   model may be downloaded the first time it is needed.
 - Langfuse export redacts common API-key patterns, labeled credentials, and
-  email addresses before sending span attributes. Review the redaction patterns
-  in `app/observability.py` for your data policy; pattern-based redaction cannot
-  guarantee removal of every sensitive value.
+  email addresses before sending span attributes. Prompt, answer, question, and
+  document content are replaced with `[CONTENT REDACTED]` by default. Set
+  `LANGFUSE_CAPTURE_CONTENT=true` only when the project data policy permits
+  sending content to Langfuse. Pattern-based PII redaction cannot guarantee
+  removal of every sensitive value.
 - Tracing and score export fail open: Langfuse errors are logged and do not
   prevent RAG or evaluation results from being produced. Set
   `LANGFUSE_ENABLED=false` to disable tracing and score publishing.
@@ -200,3 +221,33 @@ interpretations, the API saves and returns a clarification question without
 running retrieval. Otherwise, it rewrites the question for retrieval, then
 saves the structured answer, validated citations, and abstention state.
 Interactive API documentation is available at `/docs` while the server runs.
+
+## Container deployment with Docker Compose
+
+Run the entire application (API and PostgreSQL with pgvector) via Docker Compose:
+
+```bash
+cp .env.example .env
+# Set JWT_SECRET_KEY, NVIDIA_API_KEY, and optional Langfuse keys in .env
+docker compose up --build -d
+```
+
+The API service automatically waits for PostgreSQL health checks to pass before starting.
+Check health at `http://localhost:8000/healthz` and view Swagger UI at `http://localhost:8000/docs`.
+
+## Automated CI Workflow
+
+ContextIQ includes a GitHub Actions continuous integration workflow (`.github/workflows/ci.yml`) that runs on every push and pull request:
+- Provisions PostgreSQL with the pgvector extension and health checks.
+- Installs Python 3.12 dependencies.
+- Runs syntax and static compilation checks.
+- Executes automated test suites.
+- Validates Dockerfile build configuration.
+
+## Troubleshooting
+
+- **Database connection error**: Verify PostgreSQL is running (`docker compose ps`) and that `DATABASE_URL` matches your host port (5433 for local host, 5432 inside Docker network).
+- **Missing vector extension**: Ensure your database is initialized with `python -m app.main init-db` and running the `pgvector/pgvector:pg16` image.
+- **NVIDIA API errors**: Ensure `NVIDIA_API_KEY` is exported and valid. Rate limits or model downtime fall back to explicit error logging without application crashes.
+- **Langfuse connection issues**: Observability is fail-open; tracing errors are logged as warnings and do not interrupt core RAG operations. Set `LANGFUSE_ENABLED=false` to silence telemetry.
+

@@ -24,7 +24,12 @@ from app.database.conversation_repository import (
     list_sessions,
 )
 from app.generation.answerer import AnswerGenerationError, generate_answer
-from app.observability import configure_observability, flush_observability
+from app.observability import (
+    configure_observability,
+    flush_observability,
+    observation_span,
+    set_span_output,
+)
 from app.retrieval.similarity_search import search_chunks
 
 
@@ -85,8 +90,13 @@ def start_session(
     payload: SessionCreateRequest,
     user: Annotated[dict, Depends(get_current_user)],
 ):
-    row = create_session(user["id"], payload.title.strip() or "New chat")
-    return _session_response(row)
+    with observation_span(
+        "rag.api.session_create",
+        input_value={"user_id": str(user["id"])},
+    ) as span:
+        row = create_session(user["id"], payload.title.strip() or "New chat")
+        set_span_output(span, {"session_id": str(row[0])})
+        return _session_response(row)
 
 
 @app.get("/sessions", response_model=list[SessionResponse])
@@ -121,64 +131,83 @@ def send_message(
     payload: SendMessageRequest,
     user: Annotated[dict, Depends(get_current_user)],
 ):
-    _require_owned_session(session_id, user["id"])
-    if activate_session(session_id, user["id"]) is None:
-        raise HTTPException(status_code=404, detail="Conversation session not found.")
+    with observation_span(
+        "rag.api.message_lifecycle",
+        input_value={
+            "session_id": str(session_id),
+            "user_id": str(user["id"]),
+            "top_k": payload.top_k,
+        },
+        as_type="chain",
+    ) as span:
+        _require_owned_session(session_id, user["id"])
+        if activate_session(session_id, user["id"]) is None:
+            raise HTTPException(status_code=404, detail="Conversation session not found.")
 
-    previous_rows = get_messages(session_id, user["id"], limit=12)
-    history = [{"role": row[2], "content": row[3]} for row in previous_rows]
-    user_row = append_message(
-        session_id, user["id"], "user", payload.content.strip(),
-        metadata={"message_type": "question"},
-    )
-    if user_row is None:
-        raise HTTPException(status_code=404, detail="Conversation session not found.")
+        previous_rows = get_messages(session_id, user["id"], limit=12)
+        history = [{"role": row[2], "content": row[3]} for row in previous_rows]
+        user_row = append_message(
+            session_id, user["id"], "user", payload.content.strip(),
+            metadata={"message_type": "question"},
+        )
+        if user_row is None:
+            raise HTTPException(status_code=404, detail="Conversation session not found.")
 
-    try:
-        resolution = resolve_follow_up(payload.content, history)
-    except ContextualizationError as exc:
-        raise HTTPException(status_code=502, detail=str(exc)) from exc
+        try:
+            resolution = resolve_follow_up(payload.content, history)
+        except ContextualizationError as exc:
+            raise HTTPException(status_code=502, detail=str(exc)) from exc
 
-    if resolution["needs_clarification"]:
+        if resolution["needs_clarification"]:
+            assistant_row = append_message(
+                session_id,
+                user["id"],
+                "assistant",
+                resolution["clarification_question"],
+                metadata={"needs_clarification": True},
+            )
+            set_span_output(span, {
+                "session_id": str(session_id),
+                "needs_clarification": True,
+            })
+            return SendMessageResponse(
+                session_id=session_id,
+                user_message=_message_response(user_row),
+                assistant_message=_message_response(assistant_row),
+                retrieval_query=None,
+                needs_clarification=True,
+            )
+
+        retrieval_query = resolution["standalone_query"]
+        try:
+            chunks = search_chunks(retrieval_query, payload.top_k, mode="hybrid")
+            generated = generate_answer(retrieval_query, chunks, search_mode="hybrid")
+        except (AnswerGenerationError, ContextualizationError) as exc:
+            raise HTTPException(status_code=502, detail=str(exc)) from exc
+
         assistant_row = append_message(
             session_id,
             user["id"],
             "assistant",
-            resolution["clarification_question"],
-            metadata={"needs_clarification": True},
+            generated["answer"],
+            citations=generated["citations"],
+            abstained=generated["abstained"],
+            metadata={
+                "retrieval_query": retrieval_query,
+                "needs_clarification": False,
+                "answer_reason": generated["reason"],
+            },
         )
+        set_span_output(span, {
+            "session_id": str(session_id),
+            "needs_clarification": False,
+            "abstained": generated["abstained"],
+            "citations_count": len(generated["citations"]),
+        })
         return SendMessageResponse(
             session_id=session_id,
             user_message=_message_response(user_row),
             assistant_message=_message_response(assistant_row),
-            retrieval_query=None,
-            needs_clarification=True,
+            retrieval_query=retrieval_query,
+            needs_clarification=False,
         )
-
-    retrieval_query = resolution["standalone_query"]
-    try:
-        chunks = search_chunks(retrieval_query, payload.top_k, mode="hybrid")
-        generated = generate_answer(retrieval_query, chunks, search_mode="hybrid")
-    except (AnswerGenerationError, ContextualizationError) as exc:
-        raise HTTPException(status_code=502, detail=str(exc)) from exc
-
-    assistant_row = append_message(
-        session_id,
-        user["id"],
-        "assistant",
-        generated["answer"],
-        citations=generated["citations"],
-        abstained=generated["abstained"],
-        metadata={
-            "retrieval_query": retrieval_query,
-            "needs_clarification": False,
-            "answer_reason": generated["reason"],
-        },
-    )
-    return SendMessageResponse(
-        session_id=session_id,
-        user_message=_message_response(user_row),
-        assistant_message=_message_response(assistant_row),
-        retrieval_query=retrieval_query,
-        needs_clarification=False,
-    )

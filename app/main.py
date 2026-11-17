@@ -16,6 +16,7 @@ from app.observability import (
     set_span_output,
 )
 from app.evaluation.ragas_eval import DEFAULT_DATASET, DEFAULT_OUTPUT_DIR, run_ragas_evaluation
+from app.evaluation.collect_data import collect_evaluation_data
 
 def main():
 
@@ -98,6 +99,18 @@ def main():
         "--output-dir",
         default=str(DEFAULT_OUTPUT_DIR),
         help="Directory for per-sample CSV scores and the summary JSON",
+    )
+    evaluate_parser.add_argument(
+        "--save-baseline", action="store_true",
+        help="Save this run as immutable output_dir/baseline.json (fails if one already exists)",
+    )
+    evaluate_parser.add_argument(
+        "--enforce-quality-gate", action="store_true",
+        help="Exit with an error after saving the report if any quality gate fails",
+    )
+    subparsers.add_parser(
+        "collect-evaluation-data",
+        help="Run the policy question set through retrieval and generation to refresh the evaluation dataset",
     )
 
     search_parser.add_argument(
@@ -220,7 +233,15 @@ def main():
                     if citation.get("has_competing_versions"):
                         print("  Competing versions:", ", ".join(citation["competing_versions"]))
         elif args.command == "evaluate":
-            run_ragas_evaluation(args.dataset, args.output_dir)
+            run_ragas_evaluation(
+                args.dataset,
+                args.output_dir,
+                save_baseline=args.save_baseline,
+                enforce_quality_gate=args.enforce_quality_gate,
+            )
+        elif args.command == "collect-evaluation-data":
+            init_db()
+            collect_evaluation_data()
     finally:
         flush_observability()
 

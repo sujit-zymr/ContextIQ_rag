@@ -1,0 +1,52 @@
+name: CI
+
+on:
+  push:
+  pull_request:
+
+jobs:
+  quality:
+    runs-on: ubuntu-latest
+    services:
+      postgres:
+        image: pgvector/pgvector:pg16
+        env:
+          POSTGRES_USER: raguser
+          POSTGRES_PASSWORD: ragpassword
+          POSTGRES_DB: ragdb
+        ports:
+          - 5433:5432
+        options: >-
+          --health-cmd "pg_isready -U raguser -d ragdb"
+          --health-interval 5s
+          --health-timeout 3s
+          --health-retries 20
+    env:
+      DATABASE_URL: postgresql://raguser:ragpassword@localhost:5433/ragdb
+      JWT_SECRET_KEY: ci-only-secret-not-for-production
+      LANGFUSE_ENABLED: "false"
+      NVIDIA_API_KEY: ci-placeholder
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up Python 3.12
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+          cache: pip
+
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          python -m pip install -r requirements.txt
+
+      - name: Syntax and static checks
+        run: |
+          python -m py_compile $(find app tests -name "*.py")
+
+      - name: Run automated tests
+        run: python -m pytest -q
+
+      - name: Validate Docker configuration and build image
+        run: docker build -t contextiq-rag:${{ github.sha }} .

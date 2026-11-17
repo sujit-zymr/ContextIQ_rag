@@ -20,13 +20,15 @@ _REDACTION_PATTERNS = (
     (re.compile(r"\b(?:sk|pk)-lf-[A-Za-z0-9_-]{8,}\b"), "[REDACTED_LANGFUSE_KEY]"),
     (re.compile(r"\bnvapi-[A-Za-z0-9_-]{8,}\b", re.IGNORECASE), "[REDACTED_API_KEY]"),
     (re.compile(r"\bsk-(?:proj-)?[A-Za-z0-9_-]{20,}\b"), "[REDACTED_API_KEY]"),
+    (re.compile(r"(?i)\b(bearer\s+)[A-Za-z0-9._~+/-]{10,}=*"), r"\g<1>[REDACTED_TOKEN]"),
     (
         re.compile(
-            r"(?i)\b(api[_ -]?key|secret(?:[_ -]?key)?|access[_ -]?token|password)"
+            r"(?i)\b(api[_ -]?key|secret(?:[_ -]?key)?|access[_ -]?token|password|authorization)"
             r"(\s*[:=]\s*)([^\s,;\"']+)"
         ),
         r"\1\2[REDACTED]",
     ),
+    (re.compile(r"(://[^:\s]+:)[^@\s]+(@)"), r"\1[REDACTED]\2"),
     (re.compile(r"\b[\w.+-]+@[\w.-]+\.[A-Za-z]{2,}\b"), "[REDACTED_EMAIL]"),
 )
 
@@ -51,6 +53,28 @@ def _redact_attribute(value):
     return value
 
 
+_CONTENT_ATTRIBUTE = re.compile(
+    r"(?i)(input|output|prompt|completion|message|content|question|context|response|document|answer)"
+)
+_SENSITIVE_KEY_ATTRIBUTE = re.compile(
+    r"(?i)(password|secret|access[_-]?token|authorization)"
+)
+
+
+def _sanitize_trace_value(value, key: str = ""):
+    """Remove prompt and document content from telemetry unless explicitly enabled, and redact secrets."""
+    if key and _SENSITIVE_KEY_ATTRIBUTE.search(key):
+        return "[REDACTED]"
+    if os.getenv("LANGFUSE_CAPTURE_CONTENT", "false").strip().lower() not in {"1", "true", "yes", "on"}:
+        if _CONTENT_ATTRIBUTE.search(key):
+            return "[CONTENT REDACTED]" if isinstance(value, str) else "[CONTENT REDACTED]"
+    if isinstance(value, dict):
+        return {name: _sanitize_trace_value(item, str(name)) for name, item in value.items()}
+    if isinstance(value, (tuple, list)):
+        return type(value)(_sanitize_trace_value(item, key) for item in value)
+    return _redact_attribute(value)
+
+
 def _mask_otel_spans(*, params):
     """Mask sensitive strings from both Langfuse and LangChain spans on export."""
     from langfuse.types import MaskOtelSpansResult, OtelSpanPatch
@@ -59,7 +83,7 @@ def _mask_otel_spans(*, params):
     for identifier, span in params.spans.items():
         replacements = {}
         for key, value in span.attributes.items():
-            masked_value = _redact_attribute(value)
+            masked_value = _sanitize_trace_value(value, str(key))
             if masked_value != value:
                 replacements[key] = masked_value
         if replacements:
@@ -122,7 +146,7 @@ def observation_span(
         context = _langfuse.start_as_current_observation(
             as_type=as_type,
             name=name,
-            input=_redact_attribute(input_value),
+            input=_sanitize_trace_value(input_value),
             trace_context=trace_context,
         )
         span = context.__enter__()
@@ -153,7 +177,7 @@ def set_span_output(span: object | None, output: object) -> None:
 
     value = output if isinstance(output, str) else json.dumps(output, ensure_ascii=False, default=str)
     try:
-        span.update(output=redact_sensitive_text(value))
+        span.update(output=_sanitize_trace_value(value, "output"))
     except Exception as exc:
         logger.warning("Could not update Langfuse observation output: %s", redact_sensitive_text(str(exc)))
 
@@ -163,7 +187,7 @@ def set_span_metadata(span: object | None, metadata: dict) -> None:
     if span is None:
         return
     try:
-        span.update(metadata=_redact_attribute(metadata))
+        span.update(metadata=_sanitize_trace_value(metadata, "metadata"))
     except Exception as exc:
         logger.warning("Could not update Langfuse observation metadata: %s", redact_sensitive_text(str(exc)))
 
