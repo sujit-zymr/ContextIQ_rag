@@ -10,7 +10,7 @@ INSUFFICIENT_EVIDENCE_RESPONSE = (
 DEFAULT_THRESHOLDS = {
     "vector": ("RAG_MIN_VECTOR_SIMILARITY", 0.35, "similarity"),
     "full-text": ("RAG_MIN_FULL_TEXT_SCORE", 0.02, "score"),
-    "hybrid-reranked": ("RAG_MIN_RERANK_SCORE", 0.0, "rerank_score"),
+    "hybrid-reranked": ("RAG_MIN_RERANK_SCORE", -6.0, "rerank_score"),
     "hybrid-rrf": ("RAG_MIN_RRF_SCORE", 0.032, "score"),
 }
 

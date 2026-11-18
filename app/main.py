@@ -74,7 +74,7 @@ def main():
     answer_parser.add_argument(
         "--top-k",
         type=int,
-        default=5
+        default=10
     )
     answer_parser.add_argument(
         "--search-mode", choices=("vector", "full-text", "hybrid"), default="hybrid",
@@ -186,12 +186,19 @@ def main():
                 print("Source status:", result.get("source_freshness", "unknown"))
                 if result.get("has_competing_versions"):
                     print("Competing versions:", ", ".join(result["competing_versions"]))
-                score = result.get("similarity", result.get("score"))
-                score_label = {
-                    "vector": "Similarity",
-                    "full-text": "Full-text rank",
-                    "hybrid": "Reranker score" if result.get("reranked") else "RRF rank score",
-                }[args.search_mode]
+                if args.search_mode == "vector":
+                    score = result.get("similarity", result.get("score"))
+                    score_label = "Similarity"
+                elif args.search_mode == "full-text":
+                    score = result.get("score")
+                    score_label = "Full-text rank"
+                else:
+                    if result.get("reranked"):
+                        score = result.get("rerank_score", result.get("score"))
+                        score_label = "Reranker score"
+                    else:
+                        score = result.get("score")
+                        score_label = "RRF rank score"
                 print(f"{score_label}:", round(score, 4) if score is not None else "n/a")
                 print("Content:", result["content"])
                 print("-" * 50)

@@ -2,6 +2,7 @@
 from app.database.connection import get_connection
 from app.ingestion.embedder import generate_query_embedding
 from app.observability import observation_span, set_span_output
+from app.retrieval.query_preprocessor import normalize_query
 from app.retrieval.reranker import rerank_chunks
 from app.retrieval.versioning import annotate_source_versions
 
@@ -9,16 +10,17 @@ RRF_K = 60
 
 
 def search_similar_chunks(question, top_k=5):
+    normalized_question = normalize_query(question)
     with observation_span(
         "rag.retrieval",
-        input_value={"question": question, "top_k": top_k},
+        input_value={"question": question, "normalized_question": normalized_question, "top_k": top_k},
     ) as span:
         with observation_span(
             "rag.retrieval.query_embedding",
-            input_value={"question": question, "model": "all-MiniLM-L6-v2"},
+            input_value={"question": normalized_question, "model": "all-MiniLM-L6-v2"},
             as_type="embedding",
         ) as embedding_span:
-            query_embedding = generate_query_embedding(question)
+            query_embedding = generate_query_embedding(normalized_question)
             set_span_output(embedding_span, {"dimensions": len(query_embedding)})
 
         with observation_span(
@@ -69,9 +71,10 @@ def search_full_text_chunks(question, top_k=5):
     if top_k <= 0:
         raise ValueError("top_k must be positive")
 
+    normalized_question = normalize_query(question)
     with observation_span(
         "rag.retrieval.full_text_search",
-        input_value={"question": question, "top_k": top_k, "configuration": "english"},
+        input_value={"question": question, "normalized_question": normalized_question, "top_k": top_k, "configuration": "english"},
         as_type="retriever",
     ) as span:
         with get_connection() as conn:
@@ -94,7 +97,7 @@ def search_full_text_chunks(question, top_k=5):
                 ORDER BY score DESC, c.document_id, c.chunk_index
                 LIMIT %s
                 """,
-                (question, top_k),
+                (normalized_question, top_k),
             ).fetchall()
 
         chunks = annotate_source_versions([
@@ -162,21 +165,29 @@ def search_chunks(question, top_k=5, mode="hybrid"):
     """Search with vector, full-text, or RRF-fused hybrid retrieval."""
     if top_k <= 0:
         raise ValueError("top_k must be positive")
+    normalized_question = normalize_query(question)
     if mode == "vector":
-        return search_similar_chunks(question, top_k)
+        return search_similar_chunks(normalized_question, top_k)
     if mode == "full-text":
-        return search_full_text_chunks(question, top_k)
+        return search_full_text_chunks(normalized_question, top_k)
     if mode == "hybrid":
-        candidate_k = max(top_k * 3, top_k)
+        candidate_k = max(top_k * 5, 50)
         with observation_span(
             "rag.retrieval.hybrid_fusion",
-            input_value={"top_k": top_k, "candidate_k": candidate_k, "algorithm": "rrf", "rrf_k": RRF_K},
+            input_value={
+                "question": question,
+                "normalized_question": normalized_question,
+                "top_k": top_k,
+                "candidate_k": candidate_k,
+                "algorithm": "rrf",
+                "rrf_k": RRF_K,
+            },
             as_type="retriever",
         ) as span:
-            vector_results = search_similar_chunks(question, candidate_k)
-            full_text_results = search_full_text_chunks(question, candidate_k)
+            vector_results = search_similar_chunks(normalized_question, candidate_k)
+            full_text_results = search_full_text_chunks(normalized_question, candidate_k)
             fused_candidates = _fuse_ranked_results(vector_results, full_text_results, candidate_k)
-            reranked = rerank_chunks(question, fused_candidates)
+            reranked = rerank_chunks(normalized_question, fused_candidates)
             results = annotate_source_versions(reranked[:top_k])
             set_span_output(span, {
                 "retrieved_count": len(results),

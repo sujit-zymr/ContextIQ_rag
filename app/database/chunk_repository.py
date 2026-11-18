@@ -83,6 +83,11 @@ def complete_document_ingestion(
                updated_at=NOW() WHERE id=%s""",
             (filename, file_hash, source_path, Jsonb(metadata) if metadata is not None else None, document_id),
         )
+    try:
+        from app.retrieval.query_preprocessor import clear_vocabulary_cache
+        clear_vocabulary_cache()
+    except Exception:
+        pass
 
 
 def fail_document_ingestion(document_id, message):
@@ -114,6 +119,12 @@ def delete_document(document_id):
         result = conn.execute(
             "DELETE FROM documents WHERE id=%s RETURNING id", (UUID(str(document_id)),)
         ).fetchone()
+    if result is not None:
+        try:
+            from app.retrieval.query_preprocessor import clear_vocabulary_cache
+            clear_vocabulary_cache()
+        except Exception:
+            pass
     return result is not None
 
 

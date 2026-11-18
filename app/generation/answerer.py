@@ -76,15 +76,28 @@ def _validate_citations(answer_payload: dict, chunks: list[dict]) -> dict:
     answer_text = answer_payload["answer"].strip()
     declared_ids = set(answer_payload["citations"])
     inline_ids = set(_CITATION_MARKER.findall(answer_text))
+
+    # Accept citations that appear either inline [S1] in the text or in the
+    # structured citations array.  Many models list citations only in the JSON
+    # array without repeating the marker in the prose.
+    all_referenced_ids = declared_ids | inline_ids
     valid_ids = [
         source_id for source_id in source_chunks
-        if source_id in declared_ids and source_id in inline_ids
+        if source_id in all_referenced_ids
     ]
+
     # Strip every unverified or undeclared marker from the model's answer.
     answer_text = _CITATION_MARKER.sub(
         lambda match: match.group(0) if match.group(1) in valid_ids else "",
         answer_text,
     ).strip()
+
+    # If the model declared citations in the array but didn't inline them,
+    # append them so the user can see which sources were used.
+    if valid_ids and not inline_ids:
+        cited_tags = " ".join(f"[{sid}]" for sid in valid_ids)
+        answer_text = f"{answer_text} {cited_tags}"
+
     if not answer_text or not valid_ids:
         return _abstention("The generated response did not cite a retrieved source.")
 
@@ -155,6 +168,7 @@ def generate_answer(
     ).strip()
     system_prompt, user_prompt = build_rag_prompt(question, usable_chunks)
 
+    temperature = float(os.getenv("RAG_TEMPERATURE", "0.0"))
     with observation_span(
         "rag.answer_generation",
         input_value={"question": question, "model": model_name},
@@ -165,7 +179,7 @@ def generate_answer(
                 model=model_name,
                 base_url="https://integrate.api.nvidia.com/v1",
                 api_key=api_key,
-                temperature=0.6,
+                temperature=temperature,
                 top_p=0.95,
                 max_tokens=4096,
                 extra_body={"reasoning_budget": 1024},
