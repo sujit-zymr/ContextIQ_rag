@@ -2,7 +2,7 @@
 import json
 from pathlib import Path
 
-from app.retrieval.similarity_search import search_similar_chunks
+from app.retrieval.similarity_search import search_chunks
 from app.generation.answerer import generate_answer
 
 
@@ -30,9 +30,10 @@ def collect_evaluation_data():
         print(f"Question: {question}")
 
         # 1. Retrieve chunks
-        chunks = search_similar_chunks(
+        chunks = search_chunks(
             question,
-            top_k=5
+            top_k=5,
+            mode="hybrid",
         )
 
         # 2. Extract retrieved contexts
@@ -42,18 +43,33 @@ def collect_evaluation_data():
         ]
 
         # 3. Generate answer
-        response = generate_answer(
+        generated = generate_answer(
             question,
-            chunks
+            chunks,
+            search_mode="hybrid",
         )
+        response = generated["answer"]
 
         # 4. Prepare evaluation record
         dataset.append({
             "id": item["id"],
-            "topic": item["topic"],
+            "topic": item.get("category", item.get("topic", "uncategorized")),
+            "category": item.get("category", item.get("topic", "uncategorized")),
             "user_input": question,
             "retrieved_contexts": retrieved_contexts,
+            "retrieved_chunks": [
+                {
+                    "document_id": chunk.get("document_id"),
+                    "filename": chunk.get("filename"),
+                    "page": chunk.get("page"),
+                    "chunk_index": chunk.get("chunk_index"),
+                }
+                for chunk in chunks
+            ],
             "response": response,
+            "citations": generated["citations"],
+            "abstained": generated["abstained"],
+            "should_abstain": item.get("should_abstain", False),
             "reference": item["expected_answer"],
             "relevant_pages": item["relevant_pages"],
             "retrieved_pages": [
@@ -62,11 +78,14 @@ def collect_evaluation_data():
                 if chunk["page"] is not None
             ]
         })
+        if "forbidden_document_ids" in item:
+            dataset[-1]["forbidden_document_ids"] = item["forbidden_document_ids"]
 
         print(f"Retrieved chunks: {len(retrieved_contexts)}")
         print(f"Expected pages: {item['relevant_pages']}")
         print(f"Retrieved pages: {dataset[-1]['retrieved_pages']}")
         print(f"Generated answer: {response}")
+        print(f"Validated citations: {generated['citations']}")
 
     OUTPUT_FILE.parent.mkdir(parents=True, exist_ok=True)
 

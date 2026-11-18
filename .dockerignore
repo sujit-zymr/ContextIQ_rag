@@ -1,0 +1,9 @@
+.git
+.env
+.venv
+venv
+__pycache__
+*.py[cod]
+tests
+evaluation_data/ragas_results
+storage/uploads
