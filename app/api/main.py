@@ -1,8 +1,10 @@
+import os
 from contextlib import asynccontextmanager
 from typing import Annotated
 from uuid import UUID
 
 from fastapi import Depends, FastAPI, HTTPException, Query, status
+from fastapi.middleware.cors import CORSMiddleware
 import psycopg
 
 from app.api.auth import get_current_user, router as auth_router
@@ -55,6 +57,33 @@ app = FastAPI(
     description="Authenticated conversation sessions for the ContextIQ RAG pipeline.",
     lifespan=lifespan,
 )
+
+
+def _allowed_origins() -> list[str]:
+    configured = os.getenv("CORS_ALLOWED_ORIGINS", "").strip()
+    if configured:
+        return [origin.strip() for origin in configured.split(",") if origin.strip()]
+    return [
+        "http://localhost:3000",
+        "http://localhost:5173",
+        "http://localhost:8080",
+        "http://localhost:8501",
+        "http://127.0.0.1:3000",
+        "http://127.0.0.1:5173",
+        "http://127.0.0.1:8080",
+        "http://127.0.0.1:8501",
+    ]
+
+
+_origins = _allowed_origins()
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=_origins,
+    allow_credentials="*" not in _origins,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
+
 app.include_router(auth_router)
 
 
