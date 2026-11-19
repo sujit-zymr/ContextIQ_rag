@@ -8,6 +8,7 @@ from fastapi.middleware.cors import CORSMiddleware
 import psycopg
 
 from app.api.auth import get_current_user, router as auth_router
+from app.api.documents import router as documents_router
 from app.api.schemas import (
     MessageResponse,
     SendMessageRequest,
@@ -85,6 +86,7 @@ app.add_middleware(
 )
 
 app.include_router(auth_router)
+app.include_router(documents_router)
 
 
 def _session_response(row, message_count=0):
