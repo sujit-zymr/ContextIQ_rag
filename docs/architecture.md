@@ -164,7 +164,7 @@ The evaluation framework provides comprehensive assessment across deterministic 
 - **Answer Correctness**: Assesses factual agreement with reference answers.
 
 ### 7. Evaluation Reports & Quality Gates
-- Outputs detailed CSV files, structured JSON summaries, and formatted human-readable TXT reports under `evaluation_data/ragas_results/`.
+- Outputs detailed CSV files, structured JSON summaries, and formatted human-readable TXT reports under `server/evaluation_data/ragas_results/`.
 - Enforces configurable thresholds via environment variables (`RAG_EVAL_MIN_RECALL_AT_5`, `RAG_EVAL_MIN_MRR`, `RAG_EVAL_MAX_ACL_LEAKAGE`, etc.).
 - `--save-baseline` generates an immutable baseline report; `--enforce-quality-gate` exits with a nonzero code if gates fail.
 

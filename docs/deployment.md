@@ -2,6 +2,11 @@
 
 This guide covers running ContextIQ locally, in Docker, and through automated CI.
 
+> **Monorepo paths**: the backend lives in `server/`, the Compose file in
+> `infrastructure/docker/docker-compose.yml`. Run Python commands from `server/`
+> and Docker Compose through `scripts/compose.sh` (from the repository root),
+> which passes `server/.env` to Compose.
+
 ---
 
 ## 1. Prerequisites
@@ -19,11 +24,11 @@ This guide covers running ContextIQ locally, in Docker, and through automated CI
 Copy the example environment file and generate a JWT secret:
 
 ```bash
-cp .env.example .env
+cp server/.env.example server/.env
 openssl rand -hex 32
 ```
 
-Add the generated secret to `JWT_SECRET_KEY` in `.env`, along with your `NVIDIA_API_KEY`.
+Add the generated secret to `JWT_SECRET_KEY` in `server/.env`, along with your `NVIDIA_API_KEY`.
 
 ### Complete Environment Variable Reference
 
@@ -67,22 +72,22 @@ Add the generated secret to `JWT_SECRET_KEY` in `.env`, along with your `NVIDIA_
 The application provides a containerized setup with PostgreSQL pgvector and FastAPI:
 
 ```bash
-# Build and start services in the background
-docker compose up --build -d
+# Build and start services in the background (from the repository root)
+scripts/compose.sh up --build -d
 
 # Verify container status and health
-docker compose ps
+scripts/compose.sh ps
 ```
 
 ### Startup Architecture
 1. **PostgreSQL service (`postgres`)**:
    - Starts `pgvector/pgvector:pg16` on container port 5432 (mapped to host port 5433).
    - Runs continuous health checks: `pg_isready -U ${POSTGRES_USER} -d ${POSTGRES_DB}`.
-   - Persists data to the named volume `postgres_data`.
+   - Persists data to the named volume `postgres_data` (Docker name `rag-project_postgres_data`; the Compose project name is pinned to `rag-project`).
 2. **API service (`api`)**:
    - Waits for the `postgres` healthcheck to pass before booting (`condition: service_healthy`).
    - Runs database bootstrap (`init_db()`), enabling `vector` extension and creating tables.
-   - Mounts `./storage` for local document persistence.
+   - Mounts `server/storage` at `/app/storage` for local document persistence.
    - Exposes port 8000.
 
 ### Interacting with the API
@@ -93,17 +98,17 @@ docker compose ps
 ### Ingesting Documents Inside Docker
 ```bash
 # Copy document to storage directory
-cp /path/to/handbook.pdf storage/uploads/
+cp /path/to/handbook.pdf server/storage/uploads/
 
 # Run ingestion via docker compose exec
-docker compose exec api python -m app.main ingest /app/storage/uploads/handbook.pdf --title "Staff Policy"
+scripts/compose.sh exec api python -m app.main ingest /app/storage/uploads/handbook.pdf --title "Staff Policy"
 ```
 
 ---
 
 ## 4. Evaluation Workflow
 
-To run deterministic quality metrics and Ragas evaluation:
+To run deterministic quality metrics and Ragas evaluation (from `server/`):
 
 ```bash
 # Standard evaluation
@@ -124,10 +129,10 @@ The CI pipeline runs on every push and pull request via `.github/workflows/ci.ym
 1. **Checks out** code repository.
 2. **Sets up Python 3.12** with dependency caching.
 3. **Provisions PostgreSQL with pgvector** container service with automated healthchecks.
-4. **Installs dependencies** from `requirements.txt`.
+4. **Installs dependencies** from `server/requirements.txt` (Python steps run in `server/`).
 5. **Runs syntax and static compilation checks** across all application modules and tests.
 6. **Executes automated unit tests** with pytest.
-7. **Validates Docker container build** using `docker build`.
+7. **Validates the Compose file** (`infrastructure/docker/docker-compose.yml`) and **builds the backend image** from `server/`.
 
 ---
 
@@ -136,8 +141,8 @@ The CI pipeline runs on every push and pull request via `.github/workflows/ci.ym
 ### 1. Database Connection Refused
 - **Symptom**: `psycopg.OperationalError: connection to server at "localhost", port 5433 failed`.
 - **Resolution**:
-  - If running locally on host, verify Docker Postgres is running: `docker compose ps`.
-  - Ensure the host port in `DATABASE_URL` matches `docker-compose.yml` (`5433` on host, `5432` inside container network).
+  - If running locally on host, verify Docker Postgres is running: `scripts/compose.sh ps`.
+  - Ensure the host port in `DATABASE_URL` matches `infrastructure/docker/docker-compose.yml` (`5433` on host, `5432` inside container network).
   - Verify credentials match `POSTGRES_USER` and `POSTGRES_PASSWORD`.
 
 ### 2. pgvector Extension Missing
@@ -148,7 +153,7 @@ The CI pipeline runs on every push and pull request via `.github/workflows/ci.ym
 ### 3. NVIDIA API Errors / Rate Limits
 - **Symptom**: `AnswerGenerationError: NVIDIA request failed... 401 Unauthorized or 429 Too Many Requests`.
 - **Resolution**:
-  - Check that `NVIDIA_API_KEY` is present in `.env` without surrounding quotes.
+  - Check that `NVIDIA_API_KEY` is present in `server/.env` without surrounding quotes.
   - The answerer has built-in timeout and retry settings; check model availability on the NVIDIA API dashboard.
 
 ### 4. Langfuse Connection Failures

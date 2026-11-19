@@ -3,7 +3,7 @@
 **Version**: 1.0  
 **Date**: 2026-11-19  
 **Backend Branch**: `main` (Document Management API merged in PR #2)  
-**Frontend Location**: `rag-project/frontend/`
+**Frontend Location**: `client/` (monorepo; backend lives in `server/`)
 
 ---
 
@@ -43,10 +43,10 @@ The interface should look and feel like a real SaaS AI product — not a demo.
 
 ## 3. Project Structure
 
-Location: `rag-project/frontend/`
+Location: `client/`
 
 ```
-frontend/
+client/
 ├── src/
 │   ├── app/
 │   │   ├── layout.tsx                   # Root layout: ThemeProvider, AuthGuard
@@ -602,13 +602,13 @@ The following features will **NOT** be implemented because the backend does not 
 
 ## 11. Environment Configuration
 
-### `frontend/.env.example`
+### `client/.env.example`
 ```bash
 # Backend API URL — change this for staging or production deployments
 NEXT_PUBLIC_API_BASE_URL=http://localhost:8000
 ```
 
-### `frontend/.env.local` (developer local, git-ignored)
+### `client/.env.local` (developer local, git-ignored)
 ```bash
 NEXT_PUBLIC_API_BASE_URL=http://localhost:8000
 ```
@@ -621,13 +621,12 @@ NEXT_PUBLIC_API_BASE_URL=http://localhost:8000
 
 ### Backend (must be running first)
 ```bash
-cd /home/sujit.a@in.zymrinc.com/Documents/rag_new_implementation/rag-project
+# From the repository root: start PostgreSQL
+scripts/compose.sh up -d postgres
 
-# Start PostgreSQL
-docker compose up -d postgres
-
-# Activate virtual environment
-source venv/bin/activate
+# Activate the backend virtual environment
+cd server
+source .venv/bin/activate        # or: source ../venv/bin/activate
 
 # Start API server
 uvicorn app.api.main:app --host 0.0.0.0 --port 8000 --reload
@@ -636,7 +635,7 @@ API Docs live at: `http://localhost:8000/docs`
 
 ### Frontend
 ```bash
-cd /home/sujit.a@in.zymrinc.com/Documents/rag_new_implementation/rag-project/frontend
+cd client
 
 # Install dependencies (first time only)
 npm install

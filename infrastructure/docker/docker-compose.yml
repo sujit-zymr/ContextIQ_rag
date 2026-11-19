@@ -1,3 +1,12 @@
+# Pin the Compose project name so moving this file into infrastructure/docker/
+# does not change resource names. Without it the project would be named
+# "docker" and Compose would create a new, empty "docker_postgres_data" volume
+# instead of reusing the existing "rag-project_postgres_data" volume.
+name: rag-project
+
+# Paths below are resolved relative to this file (infrastructure/docker/).
+# Variable interpolation (${...}) reads server/.env only when Compose is run with
+# --env-file ../../server/.env, which scripts/compose.sh does for you.
 
 services:
   postgres:
@@ -23,18 +32,18 @@ services:
       retries: 20
 
   api:
-    build: .
+    build: ../../server
     container_name: contextiq-api
     restart: unless-stopped
     env_file:
-      - .env
+      - ../../server/.env
     environment:
       DATABASE_URL: postgresql://${POSTGRES_USER:-raguser}:${POSTGRES_PASSWORD:-ragpassword}@postgres:5432/${POSTGRES_DB:-ragdb}
       LANGFUSE_BASE_URL: ${LANGFUSE_BASE_URL:-https://cloud.langfuse.com}
     ports:
       - "${API_PORT:-8000}:8000"
     volumes:
-      - ./storage:/app/storage
+      - ../../server/storage:/app/storage
     depends_on:
       postgres:
         condition: service_healthy

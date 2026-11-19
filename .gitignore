@@ -1,11 +1,49 @@
+# ── Secrets / environment ──────────────────────────────────────────────
 .env
 .env.*
 !.env.example
+*.pem
+*.key
 
+# ── Python ─────────────────────────────────────────────────────────────
 venv/
 .venv/
 __pycache__/
 *.py[cod]
+*.egg-info/
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+.coverage
+htmlcov/
+build/
+dist/
 
+# ── Backend runtime data (generated / private) ─────────────────────────
+# Uploaded source documents may be private.
+/server/storage/
+# Generated Ragas datasets and results. Source questions are tracked in
+# server/app/evaluation_data/.
+/server/evaluation_data/
+# Compatibility symlink to server/storage (pre-monorepo absolute paths).
+/storage
 /evaluation_data/
-/storage/
+
+# ── Node.js (future client) ────────────────────────────────────────────
+node_modules/
+.next/
+out/
+.turbo/
+*.tsbuildinfo
+next-env.d.ts
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+
+# ── Logs / OS / editors ────────────────────────────────────────────────
+*.log
+.DS_Store
+Thumbs.db
+.idea/
+.vscode/

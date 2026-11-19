@@ -60,7 +60,7 @@ CREATE TABLE documents (
     filename TEXT NOT NULL,
     file_hash TEXT NOT NULL,                -- SHA-256 hash of original file
     metadata JSONB DEFAULT '{}',            -- title, department, version, dates, etc.
-    source_path TEXT,                       -- Local path on disk in storage/uploads/
+    source_path TEXT,                       -- Absolute path on disk (API uploads go to server/storage/uploads/)
     status TEXT NOT NULL DEFAULT 'completed', -- 'queued' | 'processing' | 'completed' | 'failed'
     status_message TEXT,
     created_at TIMESTAMP DEFAULT NOW(),
@@ -623,7 +623,7 @@ When building the client interface against this backend:
 
 ## 7. Environment & Running the Backend
 
-### Environment Variables (`.env`)
+### Environment Variables (`server/.env`)
 ```bash
 # Database
 DATABASE_URL=postgresql://raguser:ragpassword@localhost:5433/ragdb
@@ -645,17 +645,18 @@ LANGFUSE_BASE_URL=https://cloud.langfuse.com
 LANGFUSE_TRACING_ENVIRONMENT=development
 
 # Storage & CORS
-UPLOAD_DIR=storage/uploads
+UPLOAD_DIR=storage/uploads   # relative to server/
 CORS_ALLOWED_ORIGINS=http://localhost:3000,http://localhost:5173
 ```
 
 ### Commands to Run the Backend
 ```bash
-# 1. Start PostgreSQL with pgvector (via Docker)
-docker compose up -d postgres
+# 1. Start PostgreSQL with pgvector (via Docker), from the repository root
+scripts/compose.sh up -d postgres
 
-# 2. Activate virtual environment
-source venv/bin/activate
+# 2. Switch to the backend and activate its virtual environment
+cd server
+source .venv/bin/activate        # or the repository-root venv: source ../venv/bin/activate
 
 # 3. Start the FastAPI server
 uvicorn app.api.main:app --host 0.0.0.0 --port 8000 --reload
