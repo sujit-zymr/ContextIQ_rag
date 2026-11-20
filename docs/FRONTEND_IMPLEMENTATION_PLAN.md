@@ -28,10 +28,11 @@ The interface should look and feel like a real SaaS AI product — not a demo.
 
 | Concern | Decision | Reason |
 |---|---|---|
-| Framework | **Next.js 14+** (App Router) | SSR + file-based routing + API routes if needed |
+| Framework | **Next.js 16** (App Router, Turbopack) | File-based routing; current stable release |
 | Language | **TypeScript** (strict mode) | Type safety aligned with Pydantic backend models |
-| Styling | **Tailwind CSS** | Utility-first; pairs perfectly with shadcn/ui primitives |
-| Component Library | **Radix UI** primitives + custom Tailwind components | Accessible, headless; avoids heavy opinionated libraries |
+| Styling | **Tailwind CSS v4** (CSS-first config in `globals.css`, no `tailwind.config.ts`) | Utility-first; the styling layer shadcn/ui is built on |
+| Component Library | **shadcn/ui** (CLI v4, `new-york` style, Radix UI primitives) | Components are generated into `src/components/ui/` and owned by us; accessible Radix primitives underneath; no runtime component-library dependency |
+| Toasts | **sonner** (via the shadcn `sonner` component) | shadcn's recommended toast solution |
 | Icons | **lucide-react** | Already in shadcn ecosystem; clean and consistent |
 | State | **Zustand** (3 stores: auth, chat, documents) | Lightweight; shared state only where genuinely needed |
 | Forms | **React Hook Form** + **Zod** | Type-safe form validation mirroring backend Pydantic rules |
@@ -49,7 +50,8 @@ Location: `client/`
 client/
 ├── src/
 │   ├── app/
-│   │   ├── layout.tsx                   # Root layout: ThemeProvider, AuthGuard
+│   │   ├── globals.css                  # Tailwind v4 + shadcn theme tokens (ContextIQ dark palette)
+│   │   ├── layout.tsx                   # Root layout: Inter font, dark class, Toaster
 │   │   ├── page.tsx                     # Root: redirect to /chat or /login
 │   │   ├── login/
 │   │   │   └── page.tsx                 # Login page
@@ -94,12 +96,12 @@ client/
 │   │   │   ├── DocumentStatusBadge.tsx  # completed / processing / failed badge
 │   │   │   └── DeleteConfirmDialog.tsx  # Confirmation modal before deletion
 │   │   │
-│   │   └── ui/
-│   │       ├── Button.tsx
-│   │       ├── Input.tsx
-│   │       ├── Badge.tsx
-│   │       ├── Dialog.tsx
-│   │       ├── Tooltip.tsx
+│   │   ├── ui/                          # shadcn/ui generated components (kebab-case, do not hand-roll)
+│   │   │   ├── button.tsx  input.tsx  label.tsx  form.tsx  textarea.tsx
+│   │   │   ├── badge.tsx  card.tsx  dialog.tsx  alert-dialog.tsx  sheet.tsx
+│   │   │   ├── tooltip.tsx  scroll-area.tsx  skeleton.tsx  separator.tsx
+│   │   │   ├── table.tsx  dropdown-menu.tsx  avatar.tsx  sonner.tsx
+│   │   └── common/                      # Small app-specific primitives not provided by shadcn
 │   │       ├── Spinner.tsx
 │   │       └── EmptyState.tsx
 │   │
@@ -124,19 +126,18 @@ client/
 │   │   ├── chat.ts                      # UI-layer session & message types
 │   │   └── document.ts                  # UI-layer document types
 │   │
-│   ├── lib/
-│   │   ├── utils.ts                     # classnames helper (cn), date formatters
-│   │   └── constants.ts                 # APP_NAME, SUPPORTED_FILE_TYPES, MAX_FILE_SIZE
-│   │
-│   └── styles/
-│       └── globals.css                  # Tailwind base + ContextIQ CSS variables
+│   └── lib/
+│       ├── utils.ts                     # cn() helper (shadcn) + date formatters
+│       └── constants.ts                 # APP_NAME, SUPPORTED_FILE_TYPES, MAX_FILE_SIZE
 │
 ├── public/
 │   └── logo.svg                         # ContextIQ brand logo
 ├── .env.example
 ├── .env.local                           # (git-ignored)
+├── components.json                  # shadcn/ui configuration
 ├── next.config.ts
-├── tailwind.config.ts
+├── postcss.config.mjs               # @tailwindcss/postcss
+├── eslint.config.mjs
 ├── tsconfig.json
 └── package.json
 ```
@@ -526,6 +527,10 @@ Document icon + *"No documents yet. Upload your first document to get started."*
 ## 8. Visual Design Decisions
 
 ### 8.1 Color Tokens
+These values are mapped onto the shadcn/ui semantic tokens (`--background`, `--card`,
+`--border`, `--primary`, `--muted-foreground`, `--destructive`, ...) in `globals.css`,
+plus custom `--success` / `--warning` / `--info` tokens. Components use the semantic
+classes (`bg-background`, `text-muted-foreground`, `bg-primary`), never raw palette classes.
 ```
 Background:         slate-950   (main app background)
 Surface (cards):    slate-900   (sidebar, panels, message bubbles)
@@ -657,7 +662,7 @@ npm run build && npm start
 
 | Phase | Deliverable | Key Files |
 |---|---|---|
-| **1** | Next.js scaffold, Tailwind setup, folder structure, `.env.example` | `package.json`, `tailwind.config.ts`, `tsconfig.json`, `globals.css` |
+| **1** | Next.js scaffold, Tailwind v4, shadcn/ui init + base components, ContextIQ theme, `.env.example` | `package.json`, `components.json`, `tsconfig.json`, `app/globals.css`, `components/ui/*` |
 | **2** | TypeScript types, API client, 3 service modules | `types/api.ts`, `services/api.ts`, `auth.service.ts`, `chat.service.ts`, `document.service.ts` |
 | **3** | Zustand stores + auth guard hook | `store/*.ts`, `hooks/useAuthGuard.ts` |
 | **4** | Login + Register pages with form validation | `app/login/page.tsx`, `app/register/page.tsx`, `components/auth/` |
