@@ -93,9 +93,18 @@ implement → verify → report → commit/push only when the user approves.
   cannot target `main`); first push with `git push -u origin <name>`.
   Naming: `feature/…`, `fix/…`, `chore/…`, `docs/…`.
 - Before pushing, check `git branch -vv` shows the intended upstream.
-- Stage explicit paths (no `git add -A`). Confirm no `.env`, secrets, `node_modules/`,
-  `.next/`, `venv/`, uploads (`server/storage/`) or generated eval data
+- Stage explicit paths (no repo-wide `git add -A`; `git add -A -- <path>` is fine to
+  record deletions/renames inside a specific path). Confirm no `.env`, secrets,
+  `node_modules/`, `.next/`, `venv/`, uploads (`server/storage/`) or generated eval data
   (`server/evaluation_data/`) are staged.
+- **Check the index before every commit**: run `git diff --cached --name-only` and make
+  sure it lists exactly the files intended for that commit. `git commit` includes
+  everything already staged, not just the files added last (e.g. earlier `git mv` /
+  `git rm` changes). To commit only certain files, use `git commit -- <paths>`.
+- When splitting work into several commits, commit and verify each one in turn
+  (`git show --stat HEAD`) before staging the next.
+- If an unpushed local commit is wrong, it may be undone with `git reset --mixed HEAD~1`
+  (keeps the working tree) and redone; never do this to a pushed commit.
 - Commit messages: Conventional Commits with a scope, e.g.
   `feat(client): add app shell with sidebar and header (phase 5)`,
   `fix(api): …`, `docs: …`, `chore: …`. Body: what changed and how it was verified
