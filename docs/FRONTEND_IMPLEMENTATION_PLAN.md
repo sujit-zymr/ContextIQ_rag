@@ -85,7 +85,8 @@ client/
 │   │   │
 │   │   ├── chat/
 │   │   │   ├── ChatContainer.tsx        # Message list + scroll-to-bottom manager
-│   │   │   ├── ChatInput.tsx            # Multiline textarea + send button
+│   │   │   ├── ChatInput.tsx            # shadcn input-group: auto-growing textarea (≤6 rows) + send
+│   │   │   ├── NewChatScreen.tsx        # /chat welcome screen + first-message flow
 │   │   │   ├── MessageItem.tsx          # Renders user OR assistant message
 │   │   │   ├── AssistantMessage.tsx     # Markdown + inline [S1] citation chips
 │   │   │   ├── UserMessage.tsx          # User message bubble
@@ -110,7 +111,7 @@ client/
 │   │   │   ├── badge.tsx  card.tsx  dialog.tsx  alert-dialog.tsx  sheet.tsx
 │   │   │   ├── tooltip.tsx  scroll-area.tsx  skeleton.tsx  separator.tsx
 │   │   │   ├── table.tsx  dropdown-menu.tsx  avatar.tsx  sonner.tsx
-│   │   │   ├── field.tsx  alert.tsx  spinner.tsx
+│   │   │   ├── field.tsx  alert.tsx  spinner.tsx  sidebar.tsx  input-group.tsx
 │   │   └── common/                      # Small app-specific primitives not provided by shadcn
 │   │       ├── Logo.tsx
 │   │       ├── PageLoader.tsx
@@ -130,6 +131,7 @@ client/
 │   │   ├── queries/
 │   │   │   ├── useSessions.ts           # sessions list, create, activate
 │   │   │   ├── useMessages.ts           # message history + send (optimistic)
+│   │   │   ├── useStartConversation.ts  # /chat: create session → send → navigate
 │   │   │   └── useDocuments.ts          # list, detail, upload, delete
 │   │   ├── useAuthGuard.ts              # Redirect to /login (protected) or /chat (guest pages)
 │   │   ├── useCurrentSession.ts         # Route sessionId + its cached session
@@ -147,6 +149,7 @@ client/
 │       ├── jwt.ts                       # Read `exp` from the JWT to schedule auto-logout
 │       ├── errors.ts                    # User-safe messages; inline vs toast classification
 │       ├── validation/auth.ts           # Zod schemas for login/register
+│       ├── chat.ts                      # deriveSessionTitle()
 │       ├── utils.ts                     # cn() helper (shadcn) + date formatters
 │       └── constants.ts                 # APP_NAME, SUPPORTED_FILE_TYPES, MAX_FILE_SIZE
 │
@@ -382,7 +385,8 @@ Devtools render in development only.
 | `useCreateSession()` | `POST /sessions` | Inserts the new session into `['sessions']` |
 | `useActivateSession()` | `POST /sessions/{id}/activate` | Invalidates `['sessions']` (statuses change) |
 | `useMessagesQuery(id)` | `GET /sessions/{id}/messages` | **Disabled while a send for that session is in flight** (prevents the race below) |
-| `useSendMessage(id)` | `POST /sessions/{id}/messages` | `onMutate`: appends an optimistic user message. `onSuccess`: replaces it with the server's `user_message` + `assistant_message`. `onError`: rolls back. `onSettled`: invalidates `['sessions']` |
+| `useSendMessage(id)` | `POST /sessions/{id}/messages` | `onMutate`: appends an optimistic user message. `onSuccess`: replaces it with the server's `user_message` + `assistant_message`. `onError`: rolls back. `onSettled`: invalidates `['sessions']`. Definition shared via `sendMessageMutationOptions()` |
+| `useStartConversation()` | `POST /sessions` then `POST /sessions/{id}/messages` | Creates the session, starts the send through a `MutationObserver` with the shared options (keeps running after `/chat` unmounts), navigates to `/chat/{id}` immediately |
 | `useDocumentsQuery(params)` | `GET /documents` | Keeps previous page visible while paginating |
 | `useDocumentDetailQuery(id)` | `GET /documents/{id}` | |
 | `useUploadDocument()` | `POST /documents/upload` | Invalidates `['documents']` |
@@ -721,7 +725,7 @@ npm run build && npm start
 | **3** | TanStack Query provider, query keys + hooks; Zustand auth + chat UI stores; auth guard | `app/providers.tsx`, `lib/query-*.ts`, `hooks/queries/*`, `store/*.ts`, `hooks/useAuthGuard.ts` |
 | **4** | Login + Register pages (React Hook Form + Zod + shadcn `field`), root redirect, temporary protected `/chat` | `app/login/page.tsx`, `app/register/page.tsx`, `app/page.tsx`, `components/auth/`, `lib/validation/auth.ts` |
 | **5** | App shell (shadcn `sidebar`) + Header + real session list; `(app)` route group | `app/(app)/layout.tsx`, `components/layout/*`, `hooks/useCurrentSession.ts` |
-| **6** | New Chat welcome screen + suggested prompts | `app/chat/page.tsx`, `components/chat/SuggestedPrompts.tsx` |
+| **6** | New Chat welcome screen, suggested prompts, `ChatInput`, first-message flow | `app/(app)/chat/page.tsx`, `components/chat/{NewChatScreen,SuggestedPrompts,ChatInput}.tsx`, `hooks/queries/useStartConversation.ts` |
 | **7** | Active chat page (all 3 assistant states) | `app/chat/[sessionId]/page.tsx`, all `components/chat/` |
 | **8** | Sources panel + inline citation chips + freshness badges | `components/sources/` |
 | **9** | Document management page (table, upload, delete) | `app/documents/page.tsx`, `components/documents/` |

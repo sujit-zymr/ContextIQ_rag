@@ -1,6 +1,13 @@
 "use client";
 
-import { useIsMutating, useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import {
+  mutationOptions,
+  type QueryClient,
+  useIsMutating,
+  useMutation,
+  useQuery,
+  useQueryClient,
+} from "@tanstack/react-query";
 
 import { DEFAULT_TOP_K, MESSAGE_HISTORY_LIMIT } from "@/lib/constants";
 import { mutationKeys, queryKeys } from "@/lib/query-keys";
@@ -42,21 +49,22 @@ export interface SendMessageVariables {
 }
 
 /**
- * POST /sessions/{id}/messages with an optimistic user bubble.
+ * Mutation definition for POST /sessions/{id}/messages with an optimistic user
+ * bubble. Shared by `useSendMessage` and `useStartConversation`, so both use
+ * the same mutation key (seen by `useIsSendingMessage`) and cache updates.
  *
- * These callbacks are defined on the mutation itself, so they still run if the
+ * The callbacks live on the mutation itself, so they still run if the
  * component that started the send unmounts (e.g. /chat navigating to /chat/[id]).
  */
-export function useSendMessage(sessionId: string) {
-  const queryClient = useQueryClient();
+export function sendMessageMutationOptions(queryClient: QueryClient, sessionId: string) {
   const messagesKey = queryKeys.sessions.messages(sessionId);
 
-  return useMutation({
+  return mutationOptions({
     mutationKey: mutationKeys.sendMessage(sessionId),
     mutationFn: ({ content, topK = DEFAULT_TOP_K }: SendMessageVariables) =>
       sendMessage(sessionId, content, topK),
 
-    onMutate: async ({ content }) => {
+    onMutate: async ({ content }: SendMessageVariables) => {
       await queryClient.cancelQueries({ queryKey: messagesKey });
       const previous = queryClient.getQueryData<MessageResponse[]>(messagesKey);
       optimisticCounter += 1;
@@ -94,4 +102,10 @@ export function useSendMessage(sessionId: string) {
       void queryClient.invalidateQueries({ queryKey: queryKeys.sessions.all, exact: true });
     },
   });
+}
+
+/** POST /sessions/{id}/messages for an existing session (plan §6.1). */
+export function useSendMessage(sessionId: string) {
+  const queryClient = useQueryClient();
+  return useMutation(sendMessageMutationOptions(queryClient, sessionId));
 }

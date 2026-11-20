@@ -1,10 +1,10 @@
 import type { Metadata } from "next";
 
-import { PhasePlaceholder } from "@/components/layout/PhasePlaceholder";
+import { NewChatScreen } from "@/components/chat/NewChatScreen";
 
-export const metadata: Metadata = { title: "Chat" };
+export const metadata: Metadata = { title: "New chat" };
 
-/** TEMPORARY: replaced by the New Chat welcome screen in Phase 6. */
+/** /chat: New Chat welcome screen (plan §7.3). */
 export default function ChatPage() {
-  return <PhasePlaceholder title="New chat" phase={6} />;
+  return <NewChatScreen />;
 }

@@ -4,7 +4,7 @@ Tracks implementation of [FRONTEND_IMPLEMENTATION_PLAN.md](FRONTEND_IMPLEMENTATI
 Work goes **one phase at a time**: each phase is reviewed and approved ("good to go")
 before the next one starts. Updated at the end of every phase.
 
-**Branch**: `feature/frontend-implementation` · **Last updated**: 2026-11-20 (Phase 5 complete)
+**Branch**: `feature/frontend-implementation` · **Last updated**: 2026-11-20 (Phase 6 complete)
 
 **Legend**: ✅ done · 🔍 done, awaiting review/commit · ⏸ waiting for go-ahead · ⬜ not started · ⚠️ needs attention
 
@@ -18,9 +18,9 @@ before the next one starts. Updated at the end of every phase.
 | 2 | TypeScript types, API client, service modules | ✅ Done | ✅ | ✅ `905e9e93` |
 | 3 | TanStack Query, Zustand stores, auth guard | ✅ Done | ✅ | ✅ `905e9e93` |
 | 4 | Login + Register pages | ✅ Done | ✅ | ✅ `15dbcaf9` |
-| 5 | App shell: Sidebar + Header | ✅ Done | ✅ | ✅ |
-| 6 | New Chat welcome screen + suggested prompts | ⏸ Next (waiting for go-ahead) | ⬜ | ⬜ |
-| 7 | Active chat page (answer / clarification / abstention) | ⬜ | ⬜ | ⬜ |
+| 5 | App shell: Sidebar + Header | ✅ Done | ✅ | ✅ `96a5d02c` |
+| 6 | New Chat welcome screen + suggested prompts | ✅ Done | ✅ | ✅ |
+| 7 | Active chat page (answer / clarification / abstention) | ⏸ Next (waiting for go-ahead) | ⬜ | ⬜ |
 | 8 | Sources panel, citation chips, freshness badges | ⬜ | ⬜ | ⬜ |
 | 9 | Documents page (table, upload, delete) | ⬜ | ⬜ | ⬜ |
 | 10 | End-to-end testing on live backend, polish | ⬜ | ⬜ | ⬜ |
@@ -88,10 +88,18 @@ before the next one starts. Updated at the end of every phase.
 - **Verified**: 17 browser tests in headless Chrome against a mock backend (pass) — protected redirects, skeleton loading, sort order incl. archived, badges, active highlighting (only the current item), header titles, nav, New chat, 64px collapse centred + persisted across reload, `Ctrl+B`, error + Retry (no raw detail), empty state, user-menu logout, mobile drawer open/close-on-select, no horizontal scroll at 375px, no console errors; type-check, lint, build (`/chat/[sessionId]` is partially prerendered)
 - **Not verified**: against the live backend (backend was down)
 
-### Phase 6 — New Chat screen ⬜
-- [ ] `app/chat/page.tsx` — welcome heading + 4 suggested prompt cards
-- [ ] `components/chat/SuggestedPrompts.tsx`, `ChatInput.tsx`
-- [ ] First message: create session → optimistic send → navigate to `/chat/[id]`
+### Phase 6 — New Chat screen ✅
+- [x] Added shadcn `input-group`
+- [x] `components/chat/NewChatScreen.tsx` — heading "What would you like to know?", sub-heading, prompts, sticky input; `/chat` page now uses it (Phase 5 placeholder removed)
+- [x] `components/chat/SuggestedPrompts.tsx` — the 4 plan prompts; click pre-fills + focuses the input (does not send); 1 column on mobile
+- [x] `components/chat/ChatInput.tsx` — auto-grows to 6 rows then scrolls; Enter sends, Shift+Enter newline (IME-safe); disabled + spinner while busy; 8000-char limit with counter near the limit; reused in Phase 7
+- [x] `hooks/queries/useStartConversation.ts` — create session (title from question) → start send → navigate to `/chat/{id}` without waiting for the answer
+- [x] `sendMessageMutationOptions()` extracted in `useMessages.ts` (shared by `useSendMessage` and the first-message flow)
+- [x] `lib/chat.ts` — `deriveSessionTitle()` (≤ 50 chars, ellipsis)
+- [x] Error handling: session creation failure → toast, question kept, nothing sent; send failure after navigation → toast
+- [x] Fixed (Phase 5): header divider was pinned to the top edge; now vertically centred
+- **Verified**: 13 browser tests in headless Chrome against a mock backend (pass) — welcome content, autofocus, disabled send for empty/whitespace, prompt pre-fill, Shift+Enter + 6-row cap, counter + maxLength, create-session 500 (toast, text kept, no raw detail), first send (derived title, `{content, top_k: 5}`, navigates in < 1.5 s before the answer), no history fetch while pending (race guard), sidebar badge refresh after the answer, 502 toast, 375px single column + no horizontal scroll, no console errors; Phase 5 tests re-run (17 pass); type-check, lint, build
+- **Not verified**: against the live backend / real NVIDIA answers (backend down; paid call needs approval). `/chat/[id]` still shows the Phase 7 placeholder, so the question and answer are not displayed yet
 
 ### Phase 7 — Active chat ⬜
 - [ ] `app/chat/[sessionId]/page.tsx` — activate + load history; 404 → "Conversation not found."

@@ -22,7 +22,7 @@ export function Header() {
   return (
     <header className="sticky top-0 z-10 flex h-14 shrink-0 items-center gap-2 border-b bg-background/95 px-3 backdrop-blur supports-[backdrop-filter]:bg-background/80">
       <SidebarTrigger aria-label="Toggle sidebar" />
-      <Separator orientation="vertical" className="mr-1 data-[orientation=vertical]:h-4" />
+      <Separator orientation="vertical" className="mr-1 data-vertical:h-4 data-vertical:self-center" />
       <h1 className="min-w-0 truncate text-sm font-medium" title={title}>
         {title}
       </h1>
