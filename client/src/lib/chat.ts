@@ -10,3 +10,10 @@ export function deriveSessionTitle(question: string): string {
   if (singleLine.length <= SESSION_TITLE_FROM_QUESTION_LENGTH) return singleLine;
   return singleLine.slice(0, SESSION_TITLE_FROM_QUESTION_LENGTH - 1).trimEnd() + "…";
 }
+
+const UUID_PATTERN = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+
+/** Session ids are UUIDs; the backend answers malformed ids with 422, not 404. */
+export function isValidSessionId(value: string): boolean {
+  return UUID_PATTERN.test(value);
+}

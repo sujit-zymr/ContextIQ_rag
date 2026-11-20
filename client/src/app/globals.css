@@ -1,6 +1,7 @@
 @import "tailwindcss";
 @import "tw-animate-css";
 @import "shadcn/tailwind.css";
+@plugin "@tailwindcss/typography";
 
 @custom-variant dark (&:is(.dark *));
 
@@ -145,5 +146,45 @@
   }
   html {
     @apply font-sans;
+  }
+}
+
+/*
+ * Syntax highlighting for code blocks in AI answers (rehype-highlight emits
+ * highlight.js class names). Uses the theme tokens instead of a third-party theme.
+ */
+@layer components {
+  .hljs-comment,
+  .hljs-quote {
+    color: var(--muted-foreground);
+    font-style: italic;
+  }
+  .hljs-keyword,
+  .hljs-selector-tag,
+  .hljs-literal,
+  .hljs-type {
+    color: var(--info);
+  }
+  .hljs-string,
+  .hljs-regexp,
+  .hljs-addition,
+  .hljs-attr {
+    color: var(--success);
+  }
+  .hljs-number,
+  .hljs-symbol,
+  .hljs-variable,
+  .hljs-template-variable {
+    color: var(--warning);
+  }
+  .hljs-title,
+  .hljs-function,
+  .hljs-built_in,
+  .hljs-section {
+    color: var(--primary);
+  }
+  .hljs-deletion,
+  .hljs-meta {
+    color: var(--destructive);
   }
 }

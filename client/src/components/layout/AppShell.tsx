@@ -21,7 +21,7 @@ const SIDEBAR_WIDTHS = {
  */
 function readSidebarOpenPreference(): boolean {
   if (typeof document === "undefined") return true;
-  const match = document.cookie.match(new RegExp(`(?:^|; )${SIDEBAR_COOKIE}=(true|false)`));
+  const match = new RegExp(`(?:^|; )${SIDEBAR_COOKIE}=(true|false)`).exec(document.cookie);
   return match ? match[1] === "true" : true;
 }
 
@@ -29,15 +29,17 @@ function readSidebarOpenPreference(): boolean {
  * Authenticated app layout (plan §7.5): Sidebar | main content.
  * The Sources panel (right side) is added in Phase 8.
  */
-export function AppShell({ children }: { children: ReactNode }) {
+export function AppShell({ children }: Readonly<{ children: ReactNode }>) {
   const [defaultOpen] = useState(readSidebarOpenPreference);
 
   return (
     <SidebarProvider defaultOpen={defaultOpen} style={SIDEBAR_WIDTHS}>
       <AppSidebar />
-      <SidebarInset className="min-w-0">
+      {/* Fixed-height viewport: the header stays put and the content area
+          scrolls, so pages can pin inputs to the bottom (plan §8.2). */}
+      <SidebarInset className="h-svh min-w-0 overflow-hidden">
         <Header />
-        <div className="flex min-h-0 flex-1 flex-col">{children}</div>
+        <div className="flex min-h-0 flex-1 flex-col overflow-y-auto">{children}</div>
       </SidebarInset>
     </SidebarProvider>
   );

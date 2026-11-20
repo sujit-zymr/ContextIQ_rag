@@ -84,14 +84,17 @@ client/
 │   │   │   └── RouteGuards.tsx          # RequireAuth, GuestOnly, RootRedirect
 │   │   │
 │   │   ├── chat/
+│   │   │   ├── ConversationRoute.tsx    # Validates the route id (UUID), remounts per session
+│   │   │   ├── ConversationView.tsx     # /chat/[id]: activate, history, follow-ups, 404, errors
 │   │   │   ├── ChatContainer.tsx        # Message list + scroll-to-bottom manager
 │   │   │   ├── ChatInput.tsx            # shadcn input-group: auto-growing textarea (≤6 rows) + send
 │   │   │   ├── NewChatScreen.tsx        # /chat welcome screen + first-message flow
 │   │   │   ├── MessageItem.tsx          # Renders user OR assistant message
-│   │   │   ├── AssistantMessage.tsx     # Markdown + inline [S1] citation chips
+│   │   │   ├── AssistantMessage.tsx     # 3 states; inline [S1] citation chips added in Phase 8
+│   │   │   ├── MarkdownContent.tsx      # react-markdown + GFM + highlight (raw HTML not rendered)
 │   │   │   ├── UserMessage.tsx          # User message bubble
 │   │   │   ├── SuggestedPrompts.tsx     # Prompt cards on empty/new session
-│   │   │   ├── TypingIndicator.tsx      # Skeleton while awaiting backend response
+│   │   │   ├── TypingIndicator.tsx      # 3-dot pulse while awaiting backend response
 │   │   │   ├── ClarificationBadge.tsx   # Visual indicator for needs_clarification=true
 │   │   │   └── AbstentionAlert.tsx      # Info box for abstained=true responses
 │   │   │
@@ -149,7 +152,8 @@ client/
 │       ├── jwt.ts                       # Read `exp` from the JWT to schedule auto-logout
 │       ├── errors.ts                    # User-safe messages; inline vs toast classification
 │       ├── validation/auth.ts           # Zod schemas for login/register
-│       ├── chat.ts                      # deriveSessionTitle()
+│       ├── chat.ts                      # deriveSessionTitle(), isValidSessionId()
+│       ├── messages.ts                  # getAssistantMessageKind() (reads message metadata)
 │       ├── utils.ts                     # cn() helper (shadcn) + date formatters
 │       └── constants.ts                 # APP_NAME, SUPPORTED_FILE_TYPES, MAX_FILE_SIZE
 │
@@ -483,6 +487,8 @@ Sidebar open/collapsed (desktop) and drawer (mobile) state is owned by the shadc
   2. `GET /sessions/{sessionId}/messages`: load history.
   3. Auto-scroll to bottom.
   4. On `404` → toast "Conversation not found." and redirect to `/chat`.
+     A malformed (non-UUID) id gets the same treatment without a request: the backend
+     answers malformed ids with `422`, not `404`.
 - Renders all messages chronologically.
 
 **User message bubble**: slate-800 background, full content text.
@@ -726,7 +732,7 @@ npm run build && npm start
 | **4** | Login + Register pages (React Hook Form + Zod + shadcn `field`), root redirect, temporary protected `/chat` | `app/login/page.tsx`, `app/register/page.tsx`, `app/page.tsx`, `components/auth/`, `lib/validation/auth.ts` |
 | **5** | App shell (shadcn `sidebar`) + Header + real session list; `(app)` route group | `app/(app)/layout.tsx`, `components/layout/*`, `hooks/useCurrentSession.ts` |
 | **6** | New Chat welcome screen, suggested prompts, `ChatInput`, first-message flow | `app/(app)/chat/page.tsx`, `components/chat/{NewChatScreen,SuggestedPrompts,ChatInput}.tsx`, `hooks/queries/useStartConversation.ts` |
-| **7** | Active chat page (all 3 assistant states) | `app/chat/[sessionId]/page.tsx`, all `components/chat/` |
+| **7** | Active chat page (all 3 assistant states), markdown, follow-ups, scroll manager | `app/(app)/chat/[sessionId]/page.tsx`, `components/chat/*`, `lib/messages.ts` |
 | **8** | Sources panel + inline citation chips + freshness badges | `components/sources/` |
 | **9** | Document management page (table, upload, delete) | `app/documents/page.tsx`, `components/documents/` |
 | **10** | End-to-end testing against live backend, TypeScript cleanup, responsive polish | All files |

@@ -4,7 +4,7 @@ Tracks implementation of [FRONTEND_IMPLEMENTATION_PLAN.md](FRONTEND_IMPLEMENTATI
 Work goes **one phase at a time**: each phase is reviewed and approved ("good to go")
 before the next one starts. Updated at the end of every phase.
 
-**Branch**: `feature/frontend-implementation` · **Last updated**: 2026-11-20 (Phase 6 complete)
+**Branch**: `feature/frontend-implementation` · **Last updated**: 2026-11-20 (Phase 7 done; Phase 8 waiting for go-ahead)
 
 **Legend**: ✅ done · 🔍 done, awaiting review/commit · ⏸ waiting for go-ahead · ⬜ not started · ⚠️ needs attention
 
@@ -19,9 +19,9 @@ before the next one starts. Updated at the end of every phase.
 | 3 | TanStack Query, Zustand stores, auth guard | ✅ Done | ✅ | ✅ `905e9e93` |
 | 4 | Login + Register pages | ✅ Done | ✅ | ✅ `15dbcaf9` |
 | 5 | App shell: Sidebar + Header | ✅ Done | ✅ | ✅ `96a5d02c` |
-| 6 | New Chat welcome screen + suggested prompts | ✅ Done | ✅ | ✅ |
-| 7 | Active chat page (answer / clarification / abstention) | ⏸ Next (waiting for go-ahead) | ⬜ | ⬜ |
-| 8 | Sources panel, citation chips, freshness badges | ⬜ | ⬜ | ⬜ |
+| 6 | New Chat welcome screen + suggested prompts | ✅ Done | ✅ | ✅ `ceab8988` |
+| 7 | Active chat page (answer / clarification / abstention) | ✅ Done | ✅ | ✅ (this commit) |
+| 8 | Sources panel, citation chips, freshness badges | ⏸ Next (waiting for go-ahead) | ⬜ | ⬜ |
 | 9 | Documents page (table, upload, delete) | ⬜ | ⬜ | ⬜ |
 | 10 | End-to-end testing on live backend, polish | ⬜ | ⬜ | ⬜ |
 
@@ -101,11 +101,22 @@ before the next one starts. Updated at the end of every phase.
 - **Verified**: 13 browser tests in headless Chrome against a mock backend (pass) — welcome content, autofocus, disabled send for empty/whitespace, prompt pre-fill, Shift+Enter + 6-row cap, counter + maxLength, create-session 500 (toast, text kept, no raw detail), first send (derived title, `{content, top_k: 5}`, navigates in < 1.5 s before the answer), no history fetch while pending (race guard), sidebar badge refresh after the answer, 502 toast, 375px single column + no horizontal scroll, no console errors; Phase 5 tests re-run (17 pass); type-check, lint, build
 - **Not verified**: against the live backend / real NVIDIA answers (backend down; paid call needs approval). `/chat/[id]` still shows the Phase 7 placeholder, so the question and answer are not displayed yet
 
-### Phase 7 — Active chat ⬜
-- [ ] `app/chat/[sessionId]/page.tsx` — activate + load history; 404 → "Conversation not found."
-- [ ] `ChatContainer`, `MessageItem`, `UserMessage`, `AssistantMessage` (markdown), `TypingIndicator`
-- [ ] `ClarificationBadge` (blue, from `metadata.needs_clarification`), `AbstentionAlert` (amber)
-- [ ] Install `react-markdown`, `remark-gfm`, `rehype-highlight`
+### Phase 7 — Active chat ✅
+- [x] Installed `react-markdown` 10.1, `remark-gfm` 4.0, `rehype-highlight` 7.0, `@tailwindcss/typography` 0.5; code-highlight colours from theme tokens (`globals.css`)
+- [x] `app/(app)/chat/[sessionId]/page.tsx` → `ConversationRoute` (UUID check, remount per session) → `ConversationView`
+- [x] `ConversationView` — activates the session once (skipped while the first question is in flight), loads history, follow-up questions, 404 → toast + `/chat`, load error + Try again, empty state, skeleton
+- [x] `ChatContainer` — opens at the bottom, follows new messages, "Scroll to latest" button when scrolled up
+- [x] `MessageItem`, `UserMessage` (right bubble), `AssistantMessage` (answer / clarification / abstention via `lib/messages.ts`), `MarkdownContent`
+- [x] `ClarificationBadge` (blue left border), `AbstentionAlert` (amber; internal `answer_reason` hidden), `TypingIndicator` (3-dot pulse)
+- [x] Send failure → toast + question restored to the input; history resyncs
+- [x] App shell: content area is now the scroll container (fixed-height viewport) so inputs stay pinned
+- [x] Found via live backend: malformed ids return **422** (not 404) → validated client-side, same "Conversation not found." handling, no request
+- **Verified**:
+  - 22 browser tests against a mock backend (pass) — 3 states from history and live, markdown (heading, bold, list, GFM table, highlighted code, safe links), raw HTML not executed, activation once, opens at bottom, follow-up flow (typing indicator, input disabled, single POST), clarification persists after reload, 502 (toast, text restored, resync shows saved question once), scroll-to-latest, draft reset on switch, empty state, load error + retry, 404 redirect, first-message end-to-end, 375px, no console errors
+  - 6 checks against the **live backend** (free endpoints only, no NVIDIA calls) — real login, real session list incl. archived, empty history + header, `POST /activate` marks the session active server-side, malformed id (no request), unknown UUID → live 404 redirect
+  - type-check, lint, build
+- **Not verified**: real AI answers (paid `POST /messages` not run); Phase 5/6 mock suites not re-run after the UUID check (their mocks used non-UUID ids; the first-message flow is covered by the Phase 7 suite)
+- **Test data left in the live DB**: user `contextiq-e2e-<timestamp>@example.com` with a few empty "E2E …" sessions (no delete endpoint)
 
 ### Phase 8 — Sources panel ⬜
 - [ ] `components/sources/SourcesPanel.tsx` (desktop panel / mobile drawer)

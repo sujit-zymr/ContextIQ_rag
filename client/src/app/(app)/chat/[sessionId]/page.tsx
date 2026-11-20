@@ -1,10 +1,10 @@
 import type { Metadata } from "next";
 
-import { PhasePlaceholder } from "@/components/layout/PhasePlaceholder";
+import { ConversationRoute } from "@/components/chat/ConversationRoute";
 
 export const metadata: Metadata = { title: "Conversation" };
 
-/** TEMPORARY: replaced by the active conversation view in Phase 7. */
+/** /chat/[sessionId]: active conversation (plan §7.4). */
 export default function ConversationPage() {
-  return <PhasePlaceholder title="Conversation" phase={7} />;
+  return <ConversationRoute />;
 }
