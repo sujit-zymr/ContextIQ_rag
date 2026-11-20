@@ -59,18 +59,22 @@ client/
 │   │   │   └── page.tsx                 # Login page
 │   │   ├── register/
 │   │   │   └── page.tsx                 # Registration page
-│   │   ├── chat/
-│   │   │   ├── page.tsx                 # New chat: welcome screen + prompt suggestions
-│   │   │   └── [sessionId]/
-│   │   │       └── page.tsx             # Active conversation view
-│   │   └── documents/
-│   │       └── page.tsx                 # Document management page
+│   │   └── (app)/                       # Route group: signed-in screens share one layout
+│   │       ├── layout.tsx               # Suspense + RequireAuth + AppShell
+│   │       ├── chat/
+│   │       │   ├── page.tsx             # New chat: welcome screen + prompt suggestions
+│   │       │   └── [sessionId]/
+│   │       │       └── page.tsx         # Active conversation view
+│   │       └── documents/
+│   │           └── page.tsx             # Document management page
 │   │
 │   ├── components/
 │   │   ├── layout/
-│   │   │   ├── AppShell.tsx             # 3-panel coordinator: Sidebar | Chat | Sources
-│   │   │   ├── Sidebar.tsx              # Left sidebar: logo, New Chat, session list, nav
-│   │   │   └── Header.tsx               # Top bar: session title, mobile menu button
+│   │   │   ├── AppShell.tsx             # SidebarProvider: Sidebar | Chat | Sources (Phase 8)
+│   │   │   ├── Sidebar.tsx              # shadcn Sidebar: logo, New Chat, nav, sessions, user menu
+│   │   │   ├── SessionList.tsx          # Recent conversations (loading / error / empty states)
+│   │   │   ├── Header.tsx               # Top bar: sidebar toggle (drawer on mobile), page title
+│   │   │   └── PhasePlaceholder.tsx     # TEMPORARY content for screens of later phases
 │   │   │
 │   │   ├── auth/
 │   │   │   ├── AuthCard.tsx             # Shared centered card layout for auth pages
@@ -127,7 +131,9 @@ client/
 │   │   │   ├── useSessions.ts           # sessions list, create, activate
 │   │   │   ├── useMessages.ts           # message history + send (optimistic)
 │   │   │   └── useDocuments.ts          # list, detail, upload, delete
-│   │   └── useAuthGuard.ts              # Redirect to /login (protected) or /chat (guest pages)
+│   │   ├── useAuthGuard.ts              # Redirect to /login (protected) or /chat (guest pages)
+│   │   ├── useCurrentSession.ts         # Route sessionId + its cached session
+│   │   └── use-mobile.ts                # shadcn hook (rewritten with useSyncExternalStore)
 │   │
 │   ├── types/
 │   │   ├── api.ts                       # Exact mirrors of backend Pydantic models
@@ -414,12 +420,14 @@ State:
   activeCitationSourceId: string | null   ← which [SN] is highlighted
   activeCitationMessageId: string | null  ← which answer the citation belongs to
   sourcesPanelOpen: boolean
-  sidebarCollapsed: boolean
-  mobileSidebarOpen: boolean
 
 Actions:
   setActiveCitation(messageId, sourceId) → opens + scrolls the Sources panel
-  closeSources(), toggleSidebar(), setMobileSidebarOpen(open), reset()
+  closeSources(), reset()
+```
+Sidebar open/collapsed (desktop) and drawer (mobile) state is owned by the shadcn
+`SidebarProvider`; the desktop preference persists in the `sidebar_state` cookie.
+```
 ```
 
 ### 6.4 `useAuthGuard`
@@ -494,6 +502,7 @@ Actions:
 **No simulated streaming**. The backend returns a complete JSON response. Never animate character-by-character output.
 
 ### 7.5 Sidebar
+Built on the shadcn `sidebar` component (`collapsible="icon"`), with `Ctrl/⌘+B` to toggle.
 - **Logo area**: ContextIQ wordmark + icon.
 - **New Chat button** → navigates to `/chat`; calls `useChatUiStore.reset()`.
 - **Recent Conversations** list:
@@ -711,7 +720,7 @@ npm run build && npm start
 | **2** | TypeScript types, API client, 3 service modules | `types/api.ts`, `services/api.ts`, `auth.service.ts`, `chat.service.ts`, `document.service.ts` |
 | **3** | TanStack Query provider, query keys + hooks; Zustand auth + chat UI stores; auth guard | `app/providers.tsx`, `lib/query-*.ts`, `hooks/queries/*`, `store/*.ts`, `hooks/useAuthGuard.ts` |
 | **4** | Login + Register pages (React Hook Form + Zod + shadcn `field`), root redirect, temporary protected `/chat` | `app/login/page.tsx`, `app/register/page.tsx`, `app/page.tsx`, `components/auth/`, `lib/validation/auth.ts` |
-| **5** | App Shell + Sidebar + Header (with real session list) | `components/layout/AppShell.tsx`, `Sidebar.tsx`, `Header.tsx` |
+| **5** | App shell (shadcn `sidebar`) + Header + real session list; `(app)` route group | `app/(app)/layout.tsx`, `components/layout/*`, `hooks/useCurrentSession.ts` |
 | **6** | New Chat welcome screen + suggested prompts | `app/chat/page.tsx`, `components/chat/SuggestedPrompts.tsx` |
 | **7** | Active chat page (all 3 assistant states) | `app/chat/[sessionId]/page.tsx`, all `components/chat/` |
 | **8** | Sources panel + inline citation chips + freshness badges | `components/sources/` |

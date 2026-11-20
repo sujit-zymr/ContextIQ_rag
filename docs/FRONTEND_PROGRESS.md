@@ -4,7 +4,7 @@ Tracks implementation of [FRONTEND_IMPLEMENTATION_PLAN.md](FRONTEND_IMPLEMENTATI
 Work goes **one phase at a time**: each phase is reviewed and approved ("good to go")
 before the next one starts. Updated at the end of every phase.
 
-**Branch**: `feature/frontend-implementation` · **Last updated**: 2026-11-20 (Phase 4 complete)
+**Branch**: `feature/frontend-implementation` · **Last updated**: 2026-11-20 (Phase 5 complete)
 
 **Legend**: ✅ done · 🔍 done, awaiting review/commit · ⏸ waiting for go-ahead · ⬜ not started · ⚠️ needs attention
 
@@ -17,9 +17,9 @@ before the next one starts. Updated at the end of every phase.
 | 1 | Scaffold, Tailwind v4, shadcn/ui, theme | ✅ Done | ✅ | ✅ `966a7110` |
 | 2 | TypeScript types, API client, service modules | ✅ Done | ✅ | ✅ `905e9e93` |
 | 3 | TanStack Query, Zustand stores, auth guard | ✅ Done | ✅ | ✅ `905e9e93` |
-| 4 | Login + Register pages | ✅ Done | ✅ | ✅ |
-| 5 | App shell: Sidebar + Header | ⏸ Next (waiting for go-ahead) | ⬜ | ⬜ |
-| 6 | New Chat welcome screen + suggested prompts | ⬜ | ⬜ | ⬜ |
+| 4 | Login + Register pages | ✅ Done | ✅ | ✅ `15dbcaf9` |
+| 5 | App shell: Sidebar + Header | ✅ Done | ✅ | ✅ |
+| 6 | New Chat welcome screen + suggested prompts | ⏸ Next (waiting for go-ahead) | ⬜ | ⬜ |
 | 7 | Active chat page (answer / clarification / abstention) | ⬜ | ⬜ | ⬜ |
 | 8 | Sources panel, citation chips, freshness badges | ⬜ | ⬜ | ⬜ |
 | 9 | Documents page (table, upload, delete) | ⬜ | ⬜ | ⬜ |
@@ -75,10 +75,18 @@ before the next one starts. Updated at the end of every phase.
 - **Verified**: 21 browser tests in headless Chrome against a mock backend on :8000 (pass) — redirects for signed-in/out users, field validation, wrong password, 409, server unreachable toast, register → auto-login, reload keeps session, logout, idle token expiry, cross-tab logout, 375px layout, no console errors; type-check, lint, build (all routes prerender with Cache Components)
 - **Not verified**: against the live backend (backend was down)
 
-### Phase 5 — App shell ⬜
-- [ ] `components/layout/AppShell.tsx` — Sidebar | Chat | Sources layout
-- [ ] `Sidebar.tsx` — logo, New Chat, session list (all statuses, newest first), nav, user email, logout; collapsible; mobile drawer
-- [ ] `Header.tsx` — session title, mobile menu button
+### Phase 5 — App shell ✅
+- [x] Added shadcn `sidebar` (+ `use-mobile` hook, rewritten with `useSyncExternalStore` to fix a lint error)
+- [x] `app/(app)/layout.tsx` — route group for signed-in screens: Suspense + `RequireAuth` + `AppShell`
+- [x] `components/layout/AppShell.tsx` — `SidebarProvider` (260px / 64px), restores collapsed preference from cookie
+- [x] `components/layout/Sidebar.tsx` — logo, New chat, Chat/Documents nav, recent conversations, user menu with Log out; icon-only collapse (`Ctrl/⌘+B`), mobile drawer
+- [x] `components/layout/SessionList.tsx` — all sessions newest first (archived included), message-count badge, active indigo left bar, skeleton / error + Retry / empty states
+- [x] `components/layout/Header.tsx` — sidebar toggle + title ("New chat", session title, "Knowledge Base")
+- [x] `hooks/useCurrentSession.ts`
+- [x] Temporary `PhasePlaceholder` pages for `/chat` (Phase 6), `/chat/[id]` (Phase 7), `/documents` (Phase 9); Phase 4 `ChatPlaceholder` removed (logout moved to the sidebar user menu)
+- [x] `useChatUiStore`: removed `sidebarCollapsed` / `mobileSidebarOpen` (now owned by `SidebarProvider`)
+- **Verified**: 17 browser tests in headless Chrome against a mock backend (pass) — protected redirects, skeleton loading, sort order incl. archived, badges, active highlighting (only the current item), header titles, nav, New chat, 64px collapse centred + persisted across reload, `Ctrl+B`, error + Retry (no raw detail), empty state, user-menu logout, mobile drawer open/close-on-select, no horizontal scroll at 375px, no console errors; type-check, lint, build (`/chat/[sessionId]` is partially prerendered)
+- **Not verified**: against the live backend (backend was down)
 
 ### Phase 6 — New Chat screen ⬜
 - [ ] `app/chat/page.tsx` — welcome heading + 4 suggested prompt cards
