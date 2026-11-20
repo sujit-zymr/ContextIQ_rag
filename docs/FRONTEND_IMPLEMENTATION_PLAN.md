@@ -73,8 +73,11 @@ client/
 │   │   │   └── Header.tsx               # Top bar: session title, mobile menu button
 │   │   │
 │   │   ├── auth/
+│   │   │   ├── AuthCard.tsx             # Shared centered card layout for auth pages
 │   │   │   ├── LoginForm.tsx            # Email + password form
-│   │   │   └── RegisterForm.tsx         # Email + password + confirm form
+│   │   │   ├── RegisterForm.tsx         # Email + password + confirm form
+│   │   │   ├── PasswordInput.tsx        # Input with show/hide toggle
+│   │   │   └── RouteGuards.tsx          # RequireAuth, GuestOnly, RootRedirect
 │   │   │
 │   │   ├── chat/
 │   │   │   ├── ChatContainer.tsx        # Message list + scroll-to-bottom manager
@@ -103,8 +106,10 @@ client/
 │   │   │   ├── badge.tsx  card.tsx  dialog.tsx  alert-dialog.tsx  sheet.tsx
 │   │   │   ├── tooltip.tsx  scroll-area.tsx  skeleton.tsx  separator.tsx
 │   │   │   ├── table.tsx  dropdown-menu.tsx  avatar.tsx  sonner.tsx
+│   │   │   ├── field.tsx  alert.tsx  spinner.tsx
 │   │   └── common/                      # Small app-specific primitives not provided by shadcn
-│   │       ├── Spinner.tsx
+│   │       ├── Logo.tsx
+│   │       ├── PageLoader.tsx
 │   │       └── EmptyState.tsx
 │   │
 │   ├── services/
@@ -134,6 +139,8 @@ client/
 │       ├── query-keys.ts                # Single source of truth for query keys
 │       ├── token-storage.ts             # localStorage token accessors (SSR-safe)
 │       ├── jwt.ts                       # Read `exp` from the JWT to schedule auto-logout
+│       ├── errors.ts                    # User-safe messages; inline vs toast classification
+│       ├── validation/auth.ts           # Zod schemas for login/register
 │       ├── utils.ts                     # cn() helper (shadcn) + date formatters
 │       └── constants.ts                 # APP_NAME, SUPPORTED_FILE_TYPES, MAX_FILE_SIZE
 │
@@ -703,7 +710,7 @@ npm run build && npm start
 | **1** | Next.js scaffold, Tailwind v4, shadcn/ui init + base components, ContextIQ theme, `.env.example` | `package.json`, `components.json`, `tsconfig.json`, `app/globals.css`, `components/ui/*` |
 | **2** | TypeScript types, API client, 3 service modules | `types/api.ts`, `services/api.ts`, `auth.service.ts`, `chat.service.ts`, `document.service.ts` |
 | **3** | TanStack Query provider, query keys + hooks; Zustand auth + chat UI stores; auth guard | `app/providers.tsx`, `lib/query-*.ts`, `hooks/queries/*`, `store/*.ts`, `hooks/useAuthGuard.ts` |
-| **4** | Login + Register pages with form validation | `app/login/page.tsx`, `app/register/page.tsx`, `components/auth/` |
+| **4** | Login + Register pages (React Hook Form + Zod + shadcn `field`), root redirect, temporary protected `/chat` | `app/login/page.tsx`, `app/register/page.tsx`, `app/page.tsx`, `components/auth/`, `lib/validation/auth.ts` |
 | **5** | App Shell + Sidebar + Header (with real session list) | `components/layout/AppShell.tsx`, `Sidebar.tsx`, `Header.tsx` |
 | **6** | New Chat welcome screen + suggested prompts | `app/chat/page.tsx`, `components/chat/SuggestedPrompts.tsx` |
 | **7** | Active chat page (all 3 assistant states) | `app/chat/[sessionId]/page.tsx`, all `components/chat/` |
