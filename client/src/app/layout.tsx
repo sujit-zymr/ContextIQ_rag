@@ -5,6 +5,8 @@ import { Toaster } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { APP_DESCRIPTION, APP_NAME } from "@/lib/constants";
 
+import { Providers } from "./providers";
+
 import "./globals.css";
 
 const inter = Inter({
@@ -33,7 +35,9 @@ export default function RootLayout({ children }: LayoutProps<"/">) {
       className={`dark ${inter.variable} ${geistMono.variable} h-full antialiased`}
     >
       <body className="flex min-h-full flex-col">
-        <TooltipProvider>{children}</TooltipProvider>
+        <Providers>
+          <TooltipProvider>{children}</TooltipProvider>
+        </Providers>
         <Toaster theme="dark" position="top-right" richColors closeButton />
       </body>
     </html>

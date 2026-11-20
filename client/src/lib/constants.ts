@@ -30,3 +30,5 @@ export const SESSION_TITLE_MAX_LENGTH = 80;
 /** Length of the session title derived from the first question (plan §7.3). */
 export const SESSION_TITLE_FROM_QUESTION_LENGTH = 50;
 export const DEFAULT_TOP_K = 5;
+/** History size requested per session (backend max 500; returns the most recent N). */
+export const MESSAGE_HISTORY_LIMIT = 500;

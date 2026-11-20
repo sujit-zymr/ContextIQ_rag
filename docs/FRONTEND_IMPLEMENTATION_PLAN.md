@@ -34,7 +34,8 @@ The interface should look and feel like a real SaaS AI product — not a demo.
 | Component Library | **shadcn/ui** (CLI v4, `new-york` style, Radix UI primitives) | Components are generated into `src/components/ui/` and owned by us; accessible Radix primitives underneath; no runtime component-library dependency |
 | Toasts | **sonner** (via the shadcn `sonner` component) | shadcn's recommended toast solution |
 | Icons | **lucide-react** | Already in shadcn ecosystem; clean and consistent |
-| State | **Zustand** (3 stores: auth, chat, documents) | Lightweight; shared state only where genuinely needed |
+| Server state | **TanStack Query v5** (`@tanstack/react-query`) | Caching, request dedup, loading/error states, invalidation after mutations, optimistic updates, AbortSignal wiring for all backend data (sessions, messages, documents) |
+| Client state | **Zustand** (2 stores: auth, chat UI) | Only state that lives in the browser: token/user/auth status and UI state (citation panel, sidebar). Never holds server data |
 | Forms | **React Hook Form** + **Zod** | Type-safe form validation mirroring backend Pydantic rules |
 | Markdown Rendering | **react-markdown** + **remark-gfm** + **rehype-highlight** | Correctly renders tables, lists, code blocks in AI answers |
 | HTTP Client | **Native fetch** with a centralized wrapper | No extra dependency; interceptors for auth headers & 401s |
@@ -52,6 +53,7 @@ client/
 │   ├── app/
 │   │   ├── globals.css                  # Tailwind v4 + shadcn theme tokens (ContextIQ dark palette)
 │   │   ├── layout.tsx                   # Root layout: Inter font, dark class, Toaster
+│   │   ├── providers.tsx                # Client providers: QueryClientProvider, auth bootstrap
 │   │   ├── page.tsx                     # Root: redirect to /chat or /login
 │   │   ├── login/
 │   │   │   └── page.tsx                 # Login page
@@ -112,14 +114,15 @@ client/
 │   │   └── document.service.ts          # listDocuments(), uploadDocument(), deleteDocument(), getDetail()
 │   │
 │   ├── store/
-│   │   ├── useAuthStore.ts              # user, token, isAuthenticated, logout()
-│   │   ├── useChatStore.ts              # sessions, currentSession, messages, activeCitationSourceId
-│   │   └── useDocumentStore.ts          # documents, uploadStatus, pagination
+│   │   ├── useAuthStore.ts              # status, token, user, initialize(), login(), logout()
+│   │   └── useChatUiStore.ts            # activeCitationSourceId, sources panel + sidebar UI state
 │   │
 │   ├── hooks/
-│   │   ├── useSession.ts                # Load session & history on mount; handle first message
-│   │   ├── useDocuments.ts              # Fetch, upload, delete documents
-│   │   └── useAuthGuard.ts              # Redirect to /login if no valid token
+│   │   ├── queries/
+│   │   │   ├── useSessions.ts           # sessions list, create, activate
+│   │   │   ├── useMessages.ts           # message history + send (optimistic)
+│   │   │   └── useDocuments.ts          # list, detail, upload, delete
+│   │   └── useAuthGuard.ts              # Redirect to /login (protected) or /chat (guest pages)
 │   │
 │   ├── types/
 │   │   ├── api.ts                       # Exact mirrors of backend Pydantic models
@@ -127,6 +130,10 @@ client/
 │   │   └── document.ts                  # UI-layer document types
 │   │
 │   └── lib/
+│       ├── query-client.ts              # QueryClient factory + defaults (retry, staleTime)
+│       ├── query-keys.ts                # Single source of truth for query keys
+│       ├── token-storage.ts             # localStorage token accessors (SSR-safe)
+│       ├── jwt.ts                       # Read `exp` from the JWT to schedule auto-logout
 │       ├── utils.ts                     # cn() helper (shadcn) + date formatters
 │       └── constants.ts                 # APP_NAME, SUPPORTED_FILE_TYPES, MAX_FILE_SIZE
 │
@@ -155,7 +162,7 @@ NEXT_PUBLIC_API_BASE_URL=http://localhost:8000
 - Reads `process.env.NEXT_PUBLIC_API_BASE_URL` for base URL.
 - Reads JWT token from `localStorage` on each call (never hardcoded).
 - Automatically attaches `Authorization: Bearer <token>` to every request.
-- On `401 Unauthorized`: clears token from storage, dispatches logout in `useAuthStore`, and redirects to `/login`.
+- On `401 Unauthorized` for an authenticated request: clears the stored token and calls the registered unauthorized handler (`useAuthStore.logout('expired')`); `useAuthGuard` then redirects to `/login`.
 - Normalizes HTTP errors into typed `ApiError` objects with `status` and `message` fields.
 - Never exposes raw backend stack traces to the user.
 
@@ -331,58 +338,89 @@ export interface DocumentDeleteResponse {
 
 ## 6. State Management
 
-### 6.1 `useAuthStore` (Zustand)
+Server data is owned by **TanStack Query**; Zustand holds only browser state.
+Components never call `services/*` directly: they use the hooks in `hooks/queries/`.
+
+### 6.1 TanStack Query
+
+**Provider**: `app/providers.tsx` (client component) wraps the app in
+`QueryClientProvider`, one browser-wide `QueryClient` (a fresh one per server render).
+Devtools render in development only.
+
+**Defaults** (`lib/query-client.ts`):
+- `staleTime: 30s`. Cached data is shown instantly when revisiting a screen, then refreshed.
+- `retry`: never for 4xx or aborted requests; at most 1 retry for network/5xx errors.
+- Mutations never retry (sending a message costs an LLM call).
+
+**Query keys** (`lib/query-keys.ts`):
+```
+['auth', 'me']
+['sessions']                          list
+['sessions', id, 'messages']          history of one session
+['documents', 'list', params]         paginated list
+['documents', 'detail', id]
+```
+
+**Hooks** (`hooks/queries/`):
+
+| Hook | Backend | Cache behaviour |
+|---|---|---|
+| `useSessionsQuery()` | `GET /sessions` | Sorted by `updated_at` desc; all statuses kept |
+| `useCreateSession()` | `POST /sessions` | Inserts the new session into `['sessions']` |
+| `useActivateSession()` | `POST /sessions/{id}/activate` | Invalidates `['sessions']` (statuses change) |
+| `useMessagesQuery(id)` | `GET /sessions/{id}/messages` | **Disabled while a send for that session is in flight** (prevents the race below) |
+| `useSendMessage(id)` | `POST /sessions/{id}/messages` | `onMutate`: appends an optimistic user message. `onSuccess`: replaces it with the server's `user_message` + `assistant_message`. `onError`: rolls back. `onSettled`: invalidates `['sessions']` |
+| `useDocumentsQuery(params)` | `GET /documents` | Keeps previous page visible while paginating |
+| `useDocumentDetailQuery(id)` | `GET /documents/{id}` | |
+| `useUploadDocument()` | `POST /documents/upload` | Invalidates `['documents']` |
+| `useDeleteDocument()` | `DELETE /documents/{id}` | Optimistically removes the row; rolls back on error; invalidates `['documents']` |
+
+**First-message race**: when `/chat` creates a session and navigates to `/chat/[id]`,
+the send mutation has already put the optimistic question into
+`['sessions', id, 'messages']`. The `[id]` page's history query stays disabled while
+that send is pending, so it cannot overwrite the in-flight question. When the send
+succeeds, the cache already holds the complete history and is fresh, so no refetch is needed.
+
+### 6.2 `useAuthStore` (Zustand)
 ```
 State:
-  user: UserResponse | null
+  status: 'initializing' | 'authenticated' | 'unauthenticated'
   token: string | null
-  isAuthenticated: boolean
+  user: UserResponse | null
 
 Actions:
-  login(token, user)      → store token in localStorage; set state
-  logout()                → clear localStorage; clear state; redirect /login
-  checkAuth()             → on app mount: validate stored token via GET /auth/me
-                            if valid: restore user state
-                            if invalid/expired: auto logout
+  initialize()            → on app mount (client only): read stored token;
+                            none or expired → unauthenticated;
+                            else GET /auth/me → authenticated, or logout if invalid
+  login(email, password)  → POST /auth/token, store token, GET /auth/me, authenticated
+  logout(reason?)         → clear token + user, clear the whole query cache,
+                            status = unauthenticated ('expired' also shows a toast)
 ```
+- The API client's 401 handler is wired to `logout('expired')` (§4.2).
+- A timer logs the user out when the JWT's `exp` passes (30 min), so an idle tab
+  also returns to `/login` (acceptance checklist).
+- Redirects are done by `useAuthGuard`, which reacts to `status`, not by the store.
 
-### 6.2 `useChatStore` (Zustand)
+### 6.3 `useChatUiStore` (Zustand)
 ```
 State:
-  sessions: SessionResponse[]
-  currentSessionId: string | null
-  messages: MessageResponse[]
-  pendingMessage: { sessionId: string; content: string } | null   ← in-flight question (optimistic)
-  isSending: boolean
-  activeCitationSourceId: string | null   ← which [SN] is highlighted in Sources panel
+  activeCitationSourceId: string | null   ← which [SN] is highlighted
+  activeCitationMessageId: string | null  ← which answer the citation belongs to
+  sourcesPanelOpen: boolean
+  sidebarCollapsed: boolean
+  mobileSidebarOpen: boolean
 
 Actions:
-  loadSessions()                  → GET /sessions
-  setCurrentSession(id)           → updates currentSessionId + loads messages
-  loadMessages(sessionId)         → GET /sessions/{id}/messages
-                                    must NOT clear/overwrite while pendingMessage.sessionId === sessionId;
-                                    merge server history with the optimistic message instead
-  sendMessage(sessionId, content) → set pendingMessage + isSending, POST /sessions/{id}/messages,
-                                    then append user_message + assistant_message and clear pendingMessage
-  appendMessage(message)          → adds message to messages array locally
-  setActiveCitation(sourceId)     → opens + scrolls Sources panel
-  clearChat()                     → reset messages + currentSessionId
+  setActiveCitation(messageId, sourceId) → opens + scrolls the Sources panel
+  closeSources(), toggleSidebar(), setMobileSidebarOpen(open), reset()
 ```
 
-### 6.3 `useDocumentStore` (Zustand)
-```
-State:
-  documents: DocumentSummary[]
-  total: number
-  isLoading: boolean
-  isUploading: boolean
-  error: string | null
-
-Actions:
-  fetchDocuments(params?)         → GET /documents
-  uploadDocument(file: File)      → POST /documents/upload
-  deleteDocument(id)              → DELETE /documents/{id}; refresh list
-```
+### 6.4 `useAuthGuard`
+- Protected pages (`/chat`, `/chat/[id]`, `/documents`): render nothing while
+  `initializing`; `router.replace('/login')` when `unauthenticated`.
+- Guest pages (`/login`, `/register`): `router.replace('/chat')` when `authenticated`.
+- Protected content (and therefore every query) renders only on the client after
+  authentication is confirmed, so no query runs during Next.js prerendering.
 
 ---
 
@@ -416,12 +454,12 @@ Actions:
 - Prominent `ChatInput` at the bottom.
 - **First message send flow**:
   1. `POST /sessions` with `title = content.slice(0, 50)` (backend max: 80 chars).
-  2. `useChatStore.sendMessage(session.id, content)`: sets `pendingMessage`, shows the optimistic user bubble and `TypingIndicator`, and starts `POST /sessions/{id}/messages`.
+  2. `useSendMessage(session.id).mutate(content)`: adds the optimistic user bubble to the session's message cache, shows `TypingIndicator`, and starts `POST /sessions/{id}/messages`.
   3. `router.push('/chat/' + session.id)`, with no full reload.
-  4. The `/chat/[sessionId]` page sees `pendingMessage` for this session and **skips** its mount-time activate and history fetch (the session is brand new and the send call activates it server-side). This avoids a race where the history fetch overwrites the in-flight question.
+  4. The `/chat/[sessionId]` page sees the pending send for this session: its history query stays disabled and it skips the activate call (the send activates the session server-side). See §6.1, "First-message race".
 
 ### 7.4 Active Chat Page (`/chat/[sessionId]`)
-- On mount (skipped if `pendingMessage.sessionId === sessionId`, see §7.3):
+- On mount (skipped while a send for this session is pending, see §7.3):
   1. `POST /sessions/{sessionId}/activate`: activate this session (the backend sets the user's other sessions to `archived`).
   2. `GET /sessions/{sessionId}/messages`: load history.
   3. Auto-scroll to bottom.
@@ -450,7 +488,7 @@ Actions:
 
 ### 7.5 Sidebar
 - **Logo area**: ContextIQ wordmark + icon.
-- **New Chat button** → navigates to `/chat`; calls `useChatStore.clearChat()`.
+- **New Chat button** → navigates to `/chat`; calls `useChatUiStore.reset()`.
 - **Recent Conversations** list:
   - Loaded from `GET /sessions` on sidebar mount.
   - Sorted by `updated_at` descending.
@@ -471,7 +509,7 @@ Actions:
 - **Visible**: only when `currentSession` has an assistant message with `citations.length > 0`.
 - **Desktop**: Fixed right panel (320px), appears alongside the chat.
 - **Mobile**: Bottom sheet / slide-over drawer, triggered by **"View Sources"** button in the assistant message footer.
-- Clicking `[S1]` in the chat → `useChatStore.setActiveCitation('S1')` → panel opens + scrolls to that `CitationCard`.
+- Clicking `[S1]` in the chat → `useChatUiStore.setActiveCitation(messageId, 'S1')` → panel opens + scrolls to that `CitationCard`.
 
 **CitationCard** content:
 - `[S1]` label badge (indigo).
@@ -664,7 +702,7 @@ npm run build && npm start
 |---|---|---|
 | **1** | Next.js scaffold, Tailwind v4, shadcn/ui init + base components, ContextIQ theme, `.env.example` | `package.json`, `components.json`, `tsconfig.json`, `app/globals.css`, `components/ui/*` |
 | **2** | TypeScript types, API client, 3 service modules | `types/api.ts`, `services/api.ts`, `auth.service.ts`, `chat.service.ts`, `document.service.ts` |
-| **3** | Zustand stores + auth guard hook | `store/*.ts`, `hooks/useAuthGuard.ts` |
+| **3** | TanStack Query provider, query keys + hooks; Zustand auth + chat UI stores; auth guard | `app/providers.tsx`, `lib/query-*.ts`, `hooks/queries/*`, `store/*.ts`, `hooks/useAuthGuard.ts` |
 | **4** | Login + Register pages with form validation | `app/login/page.tsx`, `app/register/page.tsx`, `components/auth/` |
 | **5** | App Shell + Sidebar + Header (with real session list) | `components/layout/AppShell.tsx`, `Sidebar.tsx`, `Header.tsx` |
 | **6** | New Chat welcome screen + suggested prompts | `app/chat/page.tsx`, `components/chat/SuggestedPrompts.tsx` |
