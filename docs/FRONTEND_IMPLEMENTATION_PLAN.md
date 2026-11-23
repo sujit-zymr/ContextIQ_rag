@@ -486,6 +486,7 @@ Sidebar open/collapsed (desktop) and drawer (mobile) state is owned by the shadc
   1. `POST /sessions` with `title = content.slice(0, 50)` (backend max: 80 chars).
   2. `useSendMessage(session.id).mutate(content)`: adds the optimistic user bubble to the session's message cache, shows `TypingIndicator`, and starts `POST /sessions/{id}/messages`.
   3. `router.push('/chat/' + session.id)`, with no full reload.
+     The `/chat` input is then cleared: with Cache Components, Next.js keeps visited pages mounted but hidden (React `<Activity>`), so its state would otherwise still hold the sent question on the next "New chat". A failed start keeps the question for a retry.
   4. The `/chat/[sessionId]` page sees the pending send for this session: its history query stays disabled and it skips the activate call (the send activates the session server-side). See §6.1, "First-message race".
 
 ### 7.4 Active Chat Page (`/chat/[sessionId]`)

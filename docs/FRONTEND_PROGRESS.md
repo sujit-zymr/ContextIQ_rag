@@ -4,7 +4,7 @@ Tracks implementation of [FRONTEND_IMPLEMENTATION_PLAN.md](FRONTEND_IMPLEMENTATI
 Work goes **one phase at a time**: each phase is reviewed and approved ("good to go")
 before the next one starts. Updated at the end of every phase.
 
-**Branch**: `feature/frontend-implementation` · **Last updated**: 2026-11-23 (UI redesign, logo and scroll fix committed; Phase 10 waiting for go-ahead)
+**Branch**: `feature/frontend-implementation` · **Last updated**: 2026-11-23 (Phase 10 done — all phases complete)
 
 **Legend**: ✅ done · 🔍 done, awaiting review/commit · ⏸ waiting for go-ahead · ⬜ not started · ⚠️ needs attention
 
@@ -24,7 +24,7 @@ before the next one starts. Updated at the end of every phase.
 | 8 | Sources panel, citation chips, freshness badges | ✅ Done | ✅ | ✅ `fe50ec7e` |
 | 9 | Documents page (table, upload, delete) | ✅ Done | ✅ | ✅ `164bfd4d` |
 | — | UI redesign to the light mockup + theme toggle, new logo (between 9 and 10) | ✅ Done | ✅ | ✅ `de395220` (+ logo commit) |
-| 10 | End-to-end testing on live backend, polish | ⏸ Waiting for go-ahead | ⬜ | ⬜ |
+| 10 | End-to-end testing on live backend, polish | ✅ Done | ✅ | ✅ (this commit) |
 
 ---
 
@@ -165,9 +165,15 @@ upload dialog; "Answer from selected sources" left out (backend has no source fi
 - **Not verified**: live backend; the older phase-by-phase mock suites (lost when the scratchpad was cleared) were not re-run
 - **Fixed after review — double scrollbar on long conversations**: the sr-only "You:" / "ContextIQ:" labels (position: absolute) were positioned against `ChatContainer`'s wrapper instead of the message list, so they escaped its clipping and made the app shell's content area scroll too (and lifted the input off the bottom). The message list is now `relative`. Verified with a 16-message mock conversation at 1366×619, 1440×900 and 375×740: only the message list scrolls (also with the Sources panel open), the input stays at the bottom, the list opens at the newest message; reviewed by the user in the browser
 
-### Phase 10 — End-to-end & polish ⏸
-- [ ] Run the full acceptance checklist (below) against the **live backend**
-- [ ] Responsive polish (375px), console-error sweep, TypeScript cleanup
+### Phase 10 — End-to-end & polish ✅
+- [x] Branch fast-forwarded to `main` first (it lacked the merged retrieval fix, so the live backend in this folder was running the old retrieval code)
+- [x] Full acceptance checklist (below) run against the **live backend** in headless Chrome via the dev server (:3000; the backend's CORS allows only :3000/:5173): part 1 (auth, guards, expiry, documents) 12/12; part 2 (chat, AI answers, sources, sessions) 12/13 — the one failure is a backend behaviour (see below). 8 NVIDIA calls in total (free developer key)
+- [x] Responsive (375px documents and conversation), console-error sweep (none), code sweep: no `console.*`, TODOs, mock data, `any` or `eslint-disable` in `src/` (only the documented `localhost:8000` fallback for `NEXT_PUBLIC_API_BASE_URL`); type-check, lint, build (all routes prerender)
+- [x] **Bug fixed — New chat kept the previous question**: with Cache Components, Next.js hides visited pages with React `<Activity>` instead of unmounting them, so `/chat` kept its input after starting a conversation; the next "New chat" showed the old question and the new one was appended to it (sent as one question). `NewChatScreen` now clears the input after a successful start (a failed start still keeps it; an unsent draft is still kept). Verified live: input empty after "New chat", off-topic question then abstains correctly
+- [x] **Dev only — account button unclickable**: the Next.js dev-tools badge (default bottom-left) covered most of the sidebar's account button, so mouse clicks never reached it (keyboard worked; production builds have no badge). `next.config.ts`: `devIndicators: { position: "top-right" }` (empty header space). Needs a dev-server restart to take effect
+- [x] Test data removed: the two Phase 10 test accounts (sessions and messages cascade); the uploaded test PDF was deleted by the delete test
+- **Not verified live**: clarification (the backend never asked for one: a vague first message abstained instead), freshness badge colours (no dated documents — verified with the mock backend in Phase 8, by agreement), real 30-minute token expiry (simulated with an expired `exp` in the stored token)
+- **Backend finding (not changed — outside a frontend phase)**: follow-up answers can flip to "not enough evidence". The follow-up is rewritten into a standalone query by the LLM, and when the rewrite keeps output-format words ("Explain each core value briefly as a bulleted list") the cross-encoder scores the right page at −10.98, below the −6.0 evidence gate, while "… each core value (Excellence, Global Competency, …)" scores +3.43. Same follow-up answered in one run and abstained in the next. Proposed fix: have the contextualiser drop format instructions from the search query (search with the topic, answer with the user's full request)
 
 ---
 
@@ -176,47 +182,47 @@ upload dialog; "Answer from selected sources" left out (backend has no source fi
 To be ticked only when verified against the **live backend** (Phase 10, or earlier when the backend is running).
 
 **Authentication**
-- [ ] Register a new account via `/register`
-- [ ] Log in; JWT stored in `localStorage`
-- [ ] Unauthenticated access to protected routes redirects to `/login`
-- [ ] Token expiry (30 min) logs out and redirects to `/login`
+- [x] Register a new account via `/register`
+- [x] Log in; JWT stored in `localStorage` (also log out → log in)
+- [x] Unauthenticated access to protected routes redirects to `/login`
+- [x] Token expiry logs out and redirects to `/login` (simulated: stored token with `exp` in the past; not a real 30-minute wait)
 
 **Documents**
-- [ ] Upload a `.pdf` from the Documents page
-- [ ] Uploaded document shows `completed` status and correct chunk count
-- [ ] Unsupported extension (e.g. `.png`) shows a client-side error
-- [ ] Empty file shows a client-side error
-- [ ] Delete with confirmation dialog
-- [ ] Deleted document disappears immediately
-- [ ] Page and delete dialog say the knowledge base is shared
+- [x] Upload a `.pdf` from the Documents page
+- [x] Uploaded document shows `completed` status and correct chunk count
+- [x] Unsupported extension (e.g. `.png`) shows a client-side error
+- [x] Empty file shows a client-side error
+- [x] Delete with confirmation dialog
+- [x] Deleted document disappears immediately
+- [x] Page and delete dialog say the knowledge base is shared
 
 **Chat & sessions**
-- [ ] Start a new chat from the sidebar
-- [ ] New chat screen shows welcome + 4 suggested prompts
-- [ ] First question creates a session and navigates to `/chat/[id]`
-- [ ] New session appears in the sidebar
-- [ ] Clicking a previous session loads its history
-- [ ] `archived` sessions remain visible in the sidebar
-- [ ] First question is never lost or duplicated during navigation
-- [ ] TypingIndicator shows while the backend is processing
+- [x] Start a new chat from the sidebar (input now empty after a previous conversation — bug fixed in Phase 10)
+- [x] New chat screen shows welcome + 4 suggested prompts
+- [x] First question creates a session and navigates to `/chat/[id]`
+- [x] New session appears in the sidebar
+- [x] Clicking a previous session loads its history
+- [x] `archived` sessions remain visible in the sidebar
+- [x] First question is never lost or duplicated during navigation (also after reload)
+- [x] TypingIndicator shows while the backend is processing
 
 **AI responses**
-- [ ] Answers render inline `[S1]`, `[S2]` chips
-- [ ] Clarifications show the blue indicator, live and after reload
-- [ ] Abstentions show the amber info box
-- [ ] Markdown renders correctly (headings, bold, lists, code)
+- [x] Answers render inline `[S1]`, `[S2]` chips
+- [ ] Clarifications show the blue indicator, live and after reload — *not triggered live (backend abstained instead); verified with the mock backend in Phase 7*
+- [x] Abstentions show the amber info box
+- [x] Markdown renders correctly (bulleted list live in run 1; headings and code verified with the mock backend)
 
 **Sources panel**
-- [ ] Clicking `[S1]` opens the sources panel
-- [ ] Citation card shows correct filename and page/section
-- [ ] `outdated`, `superseded`, `future` badges are coloured correctly; `undated` shows none
+- [x] Clicking `[S1]` opens the sources panel
+- [x] Citation card shows correct filename and page/section
+- [ ] `outdated`, `superseded`, `future` badges are coloured correctly; `undated` shows none — *mock backend only (Phase 8), by agreement: no dated documents in the live KB*
 
 **Quality**
-- [ ] `npm run type-check` passes with zero errors
-- [ ] No browser console errors during normal use
-- [ ] Layout works at 375px
-- [ ] No hardcoded mock data in production code
-- [ ] No raw backend errors or stack traces shown to users
+- [x] `npm run type-check` passes with zero errors
+- [x] No browser console errors during normal use
+- [x] Layout works at 375px
+- [x] No hardcoded mock data in production code
+- [x] No raw backend errors or stack traces shown to users
 
 ---
 
@@ -225,8 +231,10 @@ To be ticked only when verified against the **live backend** (Phase 10, or earli
 | | Item | Owner | Notes |
 |---|---|---|---|
 | ⚠️ | Rotate `JWT_SECRET_KEY` in `server/.env` | You | The old key is in Git history on the remote. Rotating also logs out existing users |
-| ⚠️ | Live backend not yet available for testing | You | Needs `scripts/compose.sh up -d postgres` + API running from `server/`; Docker was unreachable from the agent session |
-| ⬜ | Approve live `sendMessage` test (calls NVIDIA, costs money) | You | Needed by Phase 7/10 |
+| ✅ | Live backend available for testing | — | Used for Phase 10 |
+| ✅ | Live `sendMessage` test approved | — | Free NVIDIA developer key; 8 calls in Phase 10 |
+| ⬜ | Follow-up answers can abstain when the rewritten query keeps format words | Backend | See Phase 10 "Backend finding"; contextualiser should search with the topic only |
+| ⬜ | Old E2E account `contextiq-e2e-1795167005@example.com` (10 sessions, from Nov 20) | You | Kept; delete with one SQL statement if wanted |
 | ⬜ | `npm audit`: 4 moderate in shadcn CLI tooling (`ts-morph` → `minimatch`) | — | Build-time only, not in the browser bundle; revisit when shadcn updates |
 | ⬜ | Update stored `source_path` values after the monorepo move | You | SQL in the monorepo restructure notes; root `storage` symlink keeps reindex working until then |
 | ⬜ | Add a `LICENSE` file | You | Listed in the target monorepo structure; licence choice is yours |

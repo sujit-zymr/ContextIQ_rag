@@ -18,7 +18,8 @@ import type { SessionResponse } from "@/types/api";
  *   3. navigate to /chat/{id} without waiting for the answer
  *
  * The send runs through a MutationObserver with the shared mutation options, so
- * it keeps running after /chat unmounts, and /chat/[id] sees it as pending via
+ * it keeps running independently of /chat (which Next.js hides with <Activity>
+ * rather than unmounting; the caller clears its input), and /chat/[id] sees it as pending via
  * `useIsSendingMessage` (its history query stays disabled: no race).
  *
  * `start` rejects if the session cannot be created (nothing was sent); the
