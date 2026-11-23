@@ -4,7 +4,7 @@ Tracks implementation of [FRONTEND_IMPLEMENTATION_PLAN.md](FRONTEND_IMPLEMENTATI
 Work goes **one phase at a time**: each phase is reviewed and approved ("good to go")
 before the next one starts. Updated at the end of every phase.
 
-**Branch**: `feature/frontend-implementation` · **Last updated**: 2026-11-23 (UI redesign and logo committed; Phase 10 waiting for go-ahead)
+**Branch**: `feature/frontend-implementation` · **Last updated**: 2026-11-23 (UI redesign, logo and scroll fix committed; Phase 10 waiting for go-ahead)
 
 **Legend**: ✅ done · 🔍 done, awaiting review/commit · ⏸ waiting for go-ahead · ⬜ not started · ⚠️ needs attention
 
@@ -163,6 +163,7 @@ upload dialog; "Answer from selected sources" left out (backend has no source fi
 - [x] Logo: from `client/src/assets/ContextIQ_Logo.png` — transparent PNGs in `src/assets/` (full with tagline, wordmark without tagline, "C" mark with the three dots), each with a dark-theme copy (white "Context" text and dots); `Logo` component takes `variant`; full logo on sign-in pages, wordmark in the expanded sidebar, mark in the collapsed rail, welcome screen and assistant avatar; favicon replaced with the mark. Verified by screenshots in both themes (desktop, collapsed rail, 375px) and the 13 redesign tests
 - **Verified** (mock backend, headless Chrome): 13 tests — first visit light, sidebar items, welcome text and cards, prompt pre-fill + caret, input not dimmed when empty, Attach → upload → dialog closes with draft kept, answer and code text contrast in light and dark, Dark persists across reload, stored theme applied before page scripts (no flash), System follows the OS setting, Tab order, 375px no horizontal scroll, no console errors; screenshots of login / new chat / conversation / documents / menus in both themes at 1440px and 375px; type-check, lint, build
 - **Not verified**: live backend; the older phase-by-phase mock suites (lost when the scratchpad was cleared) were not re-run
+- **Fixed after review — double scrollbar on long conversations**: the sr-only "You:" / "ContextIQ:" labels (position: absolute) were positioned against `ChatContainer`'s wrapper instead of the message list, so they escaped its clipping and made the app shell's content area scroll too (and lifted the input off the bottom). The message list is now `relative`. Verified with a 16-message mock conversation at 1366×619, 1440×900 and 375×740: only the message list scrolls (also with the Sources panel open), the input stays at the bottom, the list opens at the newest message; reviewed by the user in the browser
 
 ### Phase 10 — End-to-end & polish ⏸
 - [ ] Run the full acceptance checklist (below) against the **live backend**

@@ -58,7 +58,11 @@ export function ChatContainer({ messages, isSending }: Readonly<ChatContainerPro
       <div
         ref={scrollRef}
         onScroll={onScroll}
-        className="flex-1 overflow-y-auto"
+        // `relative`: the scroller must be the containing block of the sr-only
+        // "You:" / "ContextIQ:" labels (position: absolute). Otherwise they are
+        // placed against the outer wrapper, escape this scroller's clipping and
+        // make the page's content area scroll as well (a second scrollbar).
+        className="relative flex-1 overflow-y-auto"
         role="log"
         aria-label="Conversation"
         aria-live="polite"
