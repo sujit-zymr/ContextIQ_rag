@@ -7,15 +7,8 @@ import { toast } from "sonner";
 import { EmptyState } from "@/components/common/EmptyState";
 import { DeleteConfirmDialog } from "@/components/documents/DeleteConfirmDialog";
 import { DocumentTable } from "@/components/documents/DocumentTable";
-import { DocumentUploadZone } from "@/components/documents/DocumentUploadZone";
+import { UploadDocumentDialog } from "@/components/documents/UploadDocumentDialog";
 import { Button } from "@/components/ui/button";
-import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogHeader,
-  DialogTitle,
-} from "@/components/ui/dialog";
 import { Skeleton } from "@/components/ui/skeleton";
 import { useDeleteDocument, useDocumentsQuery } from "@/hooks/queries/useDocuments";
 import { DOCUMENTS_PAGE_SIZE } from "@/lib/constants";
@@ -32,7 +25,6 @@ export function DocumentsView() {
   const { mutate: deleteDocument } = useDeleteDocument();
 
   const [uploadOpen, setUploadOpen] = useState(false);
-  const [uploadBusy, setUploadBusy] = useState(false);
   const [deleteOpen, setDeleteOpen] = useState(false);
   const [deleteTarget, setDeleteTarget] = useState<DocumentSummary | null>(null);
 
@@ -118,24 +110,7 @@ export function DocumentsView() {
 
       {renderBody()}
 
-      <Dialog
-        open={uploadOpen}
-        onOpenChange={(open) => {
-          // Stay open while uploading: the result is reported here.
-          if (!open && uploadBusy) return;
-          setUploadOpen(open);
-        }}
-      >
-        <DialogContent showCloseButton={!uploadBusy} className="sm:max-w-md">
-          <DialogHeader>
-            <DialogTitle>Upload document</DialogTitle>
-            <DialogDescription>
-              The document is added to the shared knowledge base, available to all users.
-            </DialogDescription>
-          </DialogHeader>
-          <DocumentUploadZone onBusyChange={setUploadBusy} onUploaded={() => setUploadOpen(false)} />
-        </DialogContent>
-      </Dialog>
+      <UploadDocumentDialog open={uploadOpen} onOpenChange={setUploadOpen} />
 
       <DeleteConfirmDialog
         open={deleteOpen}

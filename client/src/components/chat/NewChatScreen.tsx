@@ -7,7 +7,6 @@ import { ChatInput } from "@/components/chat/ChatInput";
 import { SuggestedPrompts } from "@/components/chat/SuggestedPrompts";
 import { Logo } from "@/components/common/Logo";
 import { useStartConversation } from "@/hooks/queries/useStartConversation";
-import { APP_DESCRIPTION } from "@/lib/constants";
 import { getErrorMessage } from "@/lib/errors";
 
 /**
@@ -43,18 +42,22 @@ export function NewChatScreen() {
     <div className="flex flex-1 flex-col">
       <div className="flex flex-1 flex-col items-center justify-center px-4 py-8">
         <div className="flex w-full max-w-3xl flex-col items-center gap-8">
-          <div className="flex flex-col items-center gap-3 text-center">
+          <div className="flex flex-col items-center gap-4 text-center">
             <Logo withWordmark={false} />
-            <h2 className="text-2xl font-semibold tracking-tight sm:text-3xl">
-              What would you like to know?
-            </h2>
-            <p className="max-w-md text-sm text-muted-foreground sm:text-base">{APP_DESCRIPTION}</p>
+            <div className="flex flex-col gap-2">
+              <h2 className="text-2xl font-semibold tracking-tight sm:text-3xl">
+                A clearer way to work with your knowledge.
+              </h2>
+              <p className="text-sm text-muted-foreground">
+                Ask questions, explore your files, and get answers grounded in your documents.
+              </p>
+            </div>
           </div>
           <SuggestedPrompts onSelect={selectPrompt} disabled={isStarting} />
         </div>
       </div>
 
-      <div className="sticky bottom-0 bg-background/95 px-4 pt-2 pb-4 backdrop-blur supports-[backdrop-filter]:bg-background/80">
+      <div className="sticky bottom-0 bg-background px-4 pt-2 pb-3">
         <ChatInput
           value={question}
           onChange={setQuestion}
@@ -62,7 +65,7 @@ export function NewChatScreen() {
           isBusy={isStarting}
           autoFocus
           textareaRef={textareaRef}
-          className="mx-auto max-w-3xl"
+          className="mx-auto max-w-2xl"
         />
       </div>
     </div>

@@ -1,12 +1,11 @@
 "use client";
 
-import { MessageSquare, RotateCw } from "lucide-react";
+import { RotateCw } from "lucide-react";
 import Link from "next/link";
 
 import { Button } from "@/components/ui/button";
 import {
   SidebarMenu,
-  SidebarMenuBadge,
   SidebarMenuButton,
   SidebarMenuItem,
   SidebarMenuSkeleton,
@@ -14,14 +13,13 @@ import {
 } from "@/components/ui/sidebar";
 import { useSessionsQuery } from "@/hooks/queries/useSessions";
 import { useCurrentSessionId } from "@/hooks/useCurrentSession";
-import { cn } from "@/lib/utils";
 
 const SKELETON_ROWS = 5;
 
 /**
- * "Recent conversations" (plan §7.5): every session of the user, newest
+ * "Recent" conversations (plan §7.5): every session of the user, newest
  * activity first, including `archived` ones (the backend archives all but the
- * most recently used session).
+ * most recently used session). Titles only, as plain text rows.
  */
 export function SessionList() {
   const { data: sessions, isPending, isError, refetch, isFetching } = useSessionsQuery();
@@ -63,17 +61,12 @@ export function SessionList() {
     <SidebarMenu>
       {sessions.map((session) => {
         const isActive = session.id === currentSessionId;
-        const hasBadge = session.message_count > 0;
         return (
           <SidebarMenuItem key={session.id}>
             <SidebarMenuButton
               asChild
               isActive={isActive}
-              // pr-8 keeps a truncated title clear of the message-count badge.
-              className={cn(
-                "data-[active=true]:shadow-[inset_2px_0_0_var(--sidebar-primary)]",
-                hasBadge && "pr-8",
-              )}
+              className="h-8 text-[13px] text-sidebar-foreground/70 data-active:text-sidebar-accent-foreground"
             >
               <Link
                 href={`/chat/${session.id}`}
@@ -81,15 +74,9 @@ export function SessionList() {
                 title={session.title}
                 onClick={() => isMobile && setOpenMobile(false)}
               >
-                <MessageSquare aria-hidden />
                 <span>{session.title}</span>
               </Link>
             </SidebarMenuButton>
-            {hasBadge ? (
-              <SidebarMenuBadge aria-label={`${session.message_count} messages`}>
-                {session.message_count}
-              </SidebarMenuBadge>
-            ) : null}
           </SidebarMenuItem>
         );
       })}

@@ -1,5 +1,5 @@
 import type { Metadata } from "next";
-import { Geist_Mono, Inter } from "next/font/google";
+import { DM_Sans, Geist_Mono } from "next/font/google";
 
 import { Toaster } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
@@ -9,7 +9,7 @@ import { Providers } from "./providers";
 
 import "./globals.css";
 
-const inter = Inter({
+const dmSans = DM_Sans({
   variable: "--font-sans",
   subsets: ["latin"],
 });
@@ -29,18 +29,21 @@ export const metadata: Metadata = {
 
 export default function RootLayout({ children }: LayoutProps<"/">) {
   return (
-    // Dark mode only in this release (plan §8.4): the `dark` class is fixed.
+    // Light by default; Providers (next-themes) adds the `dark` class when chosen.
+    // suppressHydrationWarning: next-themes sets the class before React loads.
     <html
       lang="en"
-      className={`dark ${inter.variable} ${geistMono.variable} h-full antialiased`}
+      className={`${dmSans.variable} ${geistMono.variable} h-full antialiased`}
+      suppressHydrationWarning
     >
       {/* Browser extensions add attributes to <body> (e.g. contenteditable) before
           React loads; this ignores <body>'s own attributes only, not its children. */}
       <body className="flex min-h-full flex-col" suppressHydrationWarning>
         <Providers>
           <TooltipProvider>{children}</TooltipProvider>
+          {/* Inside Providers: the toaster follows the current theme. */}
+          <Toaster position="top-right" richColors closeButton />
         </Providers>
-        <Toaster theme="dark" position="top-right" richColors closeButton />
       </body>
     </html>
   );

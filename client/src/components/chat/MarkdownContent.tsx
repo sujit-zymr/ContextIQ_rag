@@ -57,11 +57,11 @@ export function MarkdownContent({ content, className, citations }: Readonly<Mark
   return (
     <div
       className={cn(
-        "prose prose-sm max-w-none leading-relaxed prose-invert md:prose-base",
+        "prose prose-sm max-w-none leading-relaxed dark:prose-invert md:prose-base",
         "prose-headings:font-semibold prose-headings:tracking-tight",
         "prose-a:text-primary prose-strong:text-foreground",
         "prose-code:rounded prose-code:bg-muted prose-code:px-1 prose-code:py-0.5 prose-code:font-mono prose-code:before:content-none prose-code:after:content-none",
-        "prose-pre:border prose-pre:bg-muted/60 [&_pre_code]:bg-transparent [&_pre_code]:p-0",
+        "prose-pre:border prose-pre:bg-muted/60 prose-pre:text-foreground [&_pre_code]:bg-transparent [&_pre_code]:p-0",
         className,
       )}
     >

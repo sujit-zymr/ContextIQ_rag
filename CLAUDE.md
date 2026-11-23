@@ -139,7 +139,8 @@ call the NVIDIA API (paid). Ask before running them. Langfuse tracing should be 
   components (`"use client"`) rendered inside them.
 - Tailwind CSS v4 (config in `src/app/globals.css`). Use semantic classes (`bg-background`,
   `bg-card`, `text-muted-foreground`, `bg-primary`, `text-success|warning|destructive|info`),
-  never raw palette classes. Dark mode only.
+  never raw palette classes. Light theme by default with a Dark/System option (`next-themes`,
+  class on `<html>`); use the `dark:` variant for anything theme-specific and check both themes.
 - UI components: shadcn/ui (`radix-nova`, Radix). Add with `npx shadcn@latest add <name>`;
   don't hand-roll components shadcn provides. Icons: `lucide-react`.
 - Server state: TanStack Query hooks in `src/hooks/queries/` (keys in `src/lib/query-keys.ts`).

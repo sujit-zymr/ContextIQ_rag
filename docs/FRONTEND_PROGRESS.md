@@ -4,7 +4,7 @@ Tracks implementation of [FRONTEND_IMPLEMENTATION_PLAN.md](FRONTEND_IMPLEMENTATI
 Work goes **one phase at a time**: each phase is reviewed and approved ("good to go")
 before the next one starts. Updated at the end of every phase.
 
-**Branch**: `feature/frontend-implementation` · **Last updated**: 2026-11-23 (Phases 8 and 9 committed; Phase 10 waiting for go-ahead)
+**Branch**: `feature/frontend-implementation` · **Last updated**: 2026-11-23 (UI redesign awaiting review; Phase 10 waiting for go-ahead)
 
 **Legend**: ✅ done · 🔍 done, awaiting review/commit · ⏸ waiting for go-ahead · ⬜ not started · ⚠️ needs attention
 
@@ -23,6 +23,7 @@ before the next one starts. Updated at the end of every phase.
 | 7 | Active chat page (answer / clarification / abstention) | ✅ Done | ✅ | ✅ `00b8db92` |
 | 8 | Sources panel, citation chips, freshness badges | ✅ Done | ✅ | ✅ `fe50ec7e` |
 | 9 | Documents page (table, upload, delete) | ✅ Done | ✅ | ✅ `164bfd4d` |
+| — | UI redesign to the light mockup + theme toggle (between 9 and 10) | 🔍 Awaiting review | ⬜ | ⬜ |
 | 10 | End-to-end testing on live backend, polish | ⏸ Waiting for go-ahead | ⬜ | ⬜ |
 
 ---
@@ -146,6 +147,21 @@ before the next one starts. Updated at the end of every phase.
   - type-check, lint, build
 - **Fixed during testing**: the "51–55 of 55" range changed before the next page arrived; it now comes from the page shown
 - **Not verified**: against the live backend (it was down); real ingestion of PDF/DOCX files
+
+### UI redesign (light mockup + theme toggle) 🔍
+Requested after Phase 9 from a design mockup. Decisions: light by default with a Light/Dark/System
+toggle (dark keeps the original palette); Chat nav item stays removed; "Attach document" opens the
+upload dialog; "Answer from selected sources" left out (backend has no source filter).
+- [x] Themes: `next-themes` provider (already a dependency) in `providers.tsx`, default light, saved under `contextiq.theme`; `dark` class no longer fixed on `<html>`; toaster follows the theme
+- [x] Light tokens: white sidebar; font Inter → DM Sans
+- [x] Sidebar: logo mark + wordmark in a 64px row; New chat as a plain row; Documents; "RECENT" titles only (no icons or message counts); user row with email; user menu gains Theme (Light/Dark/System)
+- [x] Header: 64px, `text-lg` semibold title, toggle kept (needed on phones)
+- [x] New chat screen: mockup heading/subtitle; 4 short prompt cards pre-fill a question starter
+- [x] `ChatInput`: rounded box, "+ Attach document" → `UploadDocumentDialog` (extracted from `DocumentsView`), square send button, disclaimer line; no longer looks disabled when empty
+- [x] Answers: `prose-invert` only in dark mode; code blocks use `text-foreground` (were unreadable in light)
+- [x] Docs: plan §7.3–7.5, §7.7, §8, CLAUDE.md frontend conventions
+- **Verified** (mock backend, headless Chrome): 13 tests — first visit light, sidebar items, welcome text and cards, prompt pre-fill + caret, input not dimmed when empty, Attach → upload → dialog closes with draft kept, answer and code text contrast in light and dark, Dark persists across reload, stored theme applied before page scripts (no flash), System follows the OS setting, Tab order, 375px no horizontal scroll, no console errors; screenshots of login / new chat / conversation / documents / menus in both themes at 1440px and 375px; type-check, lint, build
+- **Not verified**: live backend; the older phase-by-phase mock suites (lost when the scratchpad was cleared) were not re-run
 
 ### Phase 10 — End-to-end & polish ⏸
 - [ ] Run the full acceptance checklist (below) against the **live backend**

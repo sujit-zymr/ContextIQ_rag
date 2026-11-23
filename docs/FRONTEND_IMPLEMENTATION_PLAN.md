@@ -52,7 +52,7 @@ client/
 ├── src/
 │   ├── app/
 │   │   ├── globals.css                  # Tailwind v4 + shadcn theme tokens (ContextIQ dark palette)
-│   │   ├── layout.tsx                   # Root layout: Inter font, dark class, Toaster
+│   │   ├── layout.tsx                   # Root layout: DM Sans font, theme-ready <html>, Toaster (inside Providers)
 │   │   ├── providers.tsx                # Client providers: QueryClientProvider, auth bootstrap
 │   │   ├── page.tsx                     # Root: redirect to /chat or /login
 │   │   ├── login/
@@ -107,6 +107,7 @@ client/
 │   │   │   ├── DocumentsView.tsx        # /documents: list, states, pagination, upload + delete dialogs
 │   │   │   ├── DocumentTable.tsx        # List of uploaded docs with status & actions
 │   │   │   ├── DocumentUploadZone.tsx   # Drag-and-drop + file picker, inline validation, upload
+│   │   │   ├── UploadDocumentDialog.tsx # Upload modal (Documents page + "Attach document" in ChatInput)
 │   │   │   ├── DocumentStatusBadge.tsx  # completed / processing / queued / failed badge
 │   │   │   └── DeleteConfirmDialog.tsx  # Confirmation modal before deletion
 │   │   │
@@ -472,14 +473,15 @@ Sidebar open/collapsed (desktop) and drawer (mobile) state is owned by the shadc
 
 ### 7.3 New Chat Page (`/chat`)
 **Welcome / empty state screen.**
-- Displays ContextIQ logo + heading: **"What would you like to know?"**
-- Sub-heading: *"Ask questions about your documents and get AI-powered answers with cited sources."*
-- 4 Suggested Prompt Cards (clicking pre-fills chat input):
-  1. "Summarize the main points of an uploaded document"
-  2. "What is the company leave and attendance policy?"
-  3. "Explain the key terms in the uploaded agreement"
-  4. "What are the latest guidelines for remote work?"
-- Prominent `ChatInput` at the bottom.
+- Displays the ContextIQ logo mark + heading: **"A clearer way to work with your knowledge."**
+- Sub-heading: *"Ask questions, explore your files, and get answers grounded in your documents."*
+- 4 Suggested Prompt Cards in a 2×2 grid (one column on phones). Each shows a short label;
+  clicking pre-fills the chat input with the start of a question to complete (caret at the end):
+  1. "Summarize a document" → *"Summarize the main points of the document about "*
+  2. "Find a specific detail" → *"Find where the documents mention "*
+  3. "Compare two documents" → *"Compare what the documents say about "*
+  4. "Explain a key concept" → *"Explain the concept of "*
+- `ChatInput` pinned at the bottom (max width 672px on this screen).
 - **First message send flow**:
   1. `POST /sessions` with `title = content.slice(0, 50)` (backend max: 80 chars).
   2. `useSendMessage(session.id).mutate(content)`: adds the optimistic user bubble to the session's message cache, shows `TypingIndicator`, and starts `POST /sessions/{id}/messages`.
@@ -510,7 +512,12 @@ Sidebar open/collapsed (desktop) and drawer (mobile) state is owned by the shadc
 - Auto-resizing textarea; grows up to 6 visible rows, then scrolls.
 - `Enter` → send message.
 - `Shift+Enter` → insert newline.
-- Disabled while `isSending === true`.
+- Disabled (and dimmed) while `isSending === true`; an empty question only disables the send button.
+- Bottom row: **"+ Attach document"** (left) opens the upload dialog (§7.7; the file joins the
+  shared knowledge base) and the square send button (right). Character counter near the limit.
+- Disclaimer under the box: *"ContextIQ can make mistakes. Verify important information in the cited source."*
+- "Answer from selected sources" (in the design mockup) is **not** implemented: the backend's
+  `SendMessageRequest` has no source filter.
 - Clear input after successful submission.
 - Loading state → `TypingIndicator` (3-dot pulse animation) appended to message list.
 
@@ -518,21 +525,22 @@ Sidebar open/collapsed (desktop) and drawer (mobile) state is owned by the shadc
 
 ### 7.5 Sidebar
 Built on the shadcn `sidebar` component (`collapsible="icon"`), with `Ctrl/⌘+B` to toggle.
-- **Logo area**: ContextIQ wordmark + icon.
-- **New Chat button** → navigates to `/chat`; calls `useChatUiStore.reset()`.
-- **Recent Conversations** list:
+- **Logo area**: ContextIQ icon (filled `primary` square) + wordmark, aligned with the 64px header.
+- **New chat** (plain navigation row with a `+` icon, not a filled button) → navigates to `/chat`; calls `useChatUiStore.reset()`.
+- **"RECENT"** conversations list (small uppercase label):
   - Loaded from `GET /sessions` on sidebar mount.
   - Sorted by `updated_at` descending.
   - Show **all** sessions regardless of `status`. The backend automatically sets every non-current session to `archived` on activate, so filtering by `status === 'active'` would hide all past chats.
-  - Shows: session title + message count badge.
-  - Active session: indigo left border highlight, based on the current route `sessionId` (not on `status`).
+  - Shows the session title only (muted text, no icon or message count), truncated with "…".
+  - Active session: grey (`sidebar-accent`) row background, based on the current route `sessionId` (not on `status`).
   - Click → `router.push('/chat/' + session.id)`.
 - **Navigation**:
   - 📄 Documents → `/documents`
   - No separate "Chat" item: it duplicated **New Chat** and the conversation list, which already lead to the chat pages.
-- **Message count badge**: the session button reserves right padding so a truncated title never runs under the badge.
 - **Bottom**:
-  - User email (from `useAuthStore.user.email`).
+  - User email (from `useAuthStore.user.email`) with an initial avatar; the backend has no
+    display name, so the mockup's name/"workspace" lines are not shown.
+  - Menu: **Theme** (Light / Dark / System) and Log out.
   - Logout button → `useAuthStore.logout()`.
 - **Collapsible** on desktop (icon-only 64px mode).
 - **Mobile**: hidden behind hamburger button in `Header`; opens as a slide-over drawer.
@@ -590,7 +598,7 @@ Document icon + *"No documents yet. Upload your first document to get started."*
 - Below 640px the status, chunks and date move under the filename (only Document + delete columns).
 
 **Upload Document**:
-- Triggered by button → opens `DocumentUploadZone` in a modal dialog. One file at a time.
+- Triggered by the page button or "Attach document" in the chat input → opens `UploadDocumentDialog` (`DocumentUploadZone` in a modal). One file at a time.
 - Drag-and-drop area OR click to pick file.
 - **Supported extensions** (enforced client-side before upload): `.pdf`, `.docx`, `.txt`, `.md`, `.markdown`.
 - Validation before sending:
@@ -621,6 +629,13 @@ These values are mapped onto the shadcn/ui semantic tokens (`--background`, `--c
 `--border`, `--primary`, `--muted-foreground`, `--destructive`, ...) in `globals.css`,
 plus custom `--success` / `--warning` / `--info` tokens. Components use the semantic
 classes (`bg-background`, `text-muted-foreground`, `bg-primary`), never raw palette classes.
+**Two themes** (switched from the user menu, §8.4):
+
+*Light (default, from the design mockup)* — monochrome: white background, sidebar and cards;
+near-black `primary` (buttons, logo mark, active citation chip); neutral grey borders
+(`oklch(0.922 0 0)`), muted text and hover rows. Status colours: green / amber / red / blue (600 shades).
+
+*Dark (opt-in)* — the original palette:
 ```
 Background:         slate-950   (main app background)
 Surface (cards):    slate-900   (sidebar, panels, message bubbles)
@@ -641,16 +656,21 @@ Danger:             red-500     (failed status, superseded freshness, delete)
 - **Chat input bar**: Sticky bottom; full chat area width
 
 ### 8.3 Typography
-- Font: **Inter** (via `next/font/google`)
+- Font: **DM Sans** (via `next/font/google`, `--font-sans`), matching the design mockup; Geist Mono for code
 - Headings: `font-semibold`, `tracking-tight`
 - Body/messages: `text-sm` (sidebar) / `text-base` (chat), `leading-relaxed`
-- Code blocks inside AI answers: `font-mono`, `bg-slate-800`, rounded
+- Code blocks inside AI answers: `font-mono`, `bg-muted`, `text-foreground`, rounded (readable in both themes)
+- Header title: `text-lg font-semibold` in a 64px header
 
 ### 8.4 Interaction Rules
 - Transitions: `150ms ease-out` maximum — no heavy animations.
-- **Dark mode only** in this release. Light mode is a future enhancement.
-- Hover states: `hover:bg-slate-800` on interactive list items.
-- Focus rings: `focus-visible:ring-2 focus-visible:ring-indigo-500`.
+- **Themes**: light by default; Light / Dark / System in the user menu (`next-themes`,
+  `attribute="class"`, saved in localStorage under `contextiq.theme`, applied to `<html>`
+  before first paint so there is no flash). Components use semantic tokens only, so both
+  themes come from `globals.css`; anything theme-specific uses the `dark:` variant
+  (e.g. `dark:prose-invert` for answers).
+- Hover states: `hover:bg-accent` on interactive list items.
+- Focus rings: `focus-visible:ring-2 focus-visible:ring-ring`.
 - No excessive gradients — solid fills only.
 - No decorative illustration overload.
 

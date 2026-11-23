@@ -1,8 +1,9 @@
 "use client";
 
-import { ArrowUp } from "lucide-react";
-import { type KeyboardEvent, type RefObject, useLayoutEffect, useRef } from "react";
+import { ArrowUp, Plus } from "lucide-react";
+import { type KeyboardEvent, type RefObject, useLayoutEffect, useRef, useState } from "react";
 
+import { UploadDocumentDialog } from "@/components/documents/UploadDocumentDialog";
 import {
   InputGroup,
   InputGroupAddon,
@@ -32,9 +33,12 @@ interface ChatInputProps {
   className?: string;
 }
 
+const DISCLAIMER = "ContextIQ can make mistakes. Verify important information in the cited source.";
+
 /**
  * Multiline question input (plan §7.4): grows with its content up to 6 rows,
- * then scrolls. Enter sends, Shift+Enter inserts a newline.
+ * then scrolls. Enter sends, Shift+Enter inserts a newline. "Attach document"
+ * opens the upload dialog (the file joins the shared knowledge base).
  */
 export function ChatInput({
   value,
@@ -48,6 +52,7 @@ export function ChatInput({
   className,
 }: ChatInputProps) {
   const ownRef = useRef<HTMLTextAreaElement | null>(null);
+  const [attachOpen, setAttachOpen] = useState(false);
   const innerRef = textareaRef ?? ownRef;
   const trimmed = value.trim();
   const isDisabled = disabled || isBusy;
@@ -74,49 +79,68 @@ export function ChatInput({
   };
 
   return (
-    <form
-      className={cn("w-full", className)}
-      onSubmit={(event) => {
-        event.preventDefault();
-        submit();
-      }}
-    >
-      <InputGroup className="rounded-2xl bg-card shadow-sm">
-        <InputGroupTextarea
-          ref={innerRef}
-          value={value}
-          onChange={(event) => onChange(event.target.value)}
-          onKeyDown={onKeyDown}
-          placeholder={placeholder}
-          aria-label="Your question"
-          maxLength={MESSAGE_MAX_LENGTH}
-          rows={1}
-          autoFocus={autoFocus}
-          disabled={isDisabled}
-          className="max-h-[calc(6lh+1.25rem)] min-h-12 resize-none overflow-y-auto px-4 pt-3.5 text-base md:text-base"
-        />
-        <InputGroupAddon align="block-end" className="justify-between gap-2 px-3 pb-2.5">
-          <InputGroupText className="text-xs font-normal text-muted-foreground">
-            {value.length >= COUNTER_THRESHOLD ? (
-              <span aria-live="polite">
-                {value.length.toLocaleString()} / {MESSAGE_MAX_LENGTH.toLocaleString()}
-              </span>
-            ) : (
-              <span className="hidden sm:inline">Enter to send · Shift+Enter for a new line</span>
-            )}
-          </InputGroupText>
-          <InputGroupButton
-            type="submit"
-            variant="default"
-            size="icon-sm"
-            className="rounded-full"
-            disabled={!canSubmit}
-            aria-label={isBusy ? "Sending…" : "Send message"}
-          >
-            {isBusy ? <Spinner /> : <ArrowUp aria-hidden />}
-          </InputGroupButton>
-        </InputGroupAddon>
-      </InputGroup>
-    </form>
+    <div className={cn("flex w-full flex-col gap-2", className)}>
+      <form
+        onSubmit={(event) => {
+          event.preventDefault();
+          submit();
+        }}
+      >
+        {/* The group dims itself when anything inside is disabled, including the
+            send button on an empty question; dim only when the input is disabled. */}
+        <InputGroup
+          className={cn(
+            "rounded-xl bg-card shadow-xs has-disabled:bg-card has-disabled:opacity-100",
+            isDisabled && "opacity-60",
+          )}
+        >
+          <InputGroupTextarea
+            ref={innerRef}
+            value={value}
+            onChange={(event) => onChange(event.target.value)}
+            onKeyDown={onKeyDown}
+            placeholder={placeholder}
+            aria-label="Your question"
+            maxLength={MESSAGE_MAX_LENGTH}
+            rows={1}
+            autoFocus={autoFocus}
+            disabled={isDisabled}
+            className="max-h-[calc(6lh+1.25rem)] min-h-12 resize-none overflow-y-auto px-4 pt-3.5 text-base md:text-sm"
+          />
+          <InputGroupAddon align="block-end" className="justify-between gap-2 px-2.5 pb-2.5">
+            <InputGroupButton
+              type="button"
+              variant="ghost"
+              size="xs"
+              className="text-muted-foreground"
+              onClick={() => setAttachOpen(true)}
+            >
+              <Plus aria-hidden /> Attach document
+            </InputGroupButton>
+            <div className="flex items-center gap-2">
+              {value.length >= COUNTER_THRESHOLD ? (
+                <InputGroupText className="text-xs font-normal text-muted-foreground">
+                  <span aria-live="polite">
+                    {value.length.toLocaleString()} / {MESSAGE_MAX_LENGTH.toLocaleString()}
+                  </span>
+                </InputGroupText>
+              ) : null}
+              <InputGroupButton
+                type="submit"
+                variant="default"
+                size="icon-sm"
+                className="rounded-lg"
+                disabled={!canSubmit}
+                aria-label={isBusy ? "Sending…" : "Send message"}
+              >
+                {isBusy ? <Spinner /> : <ArrowUp aria-hidden />}
+              </InputGroupButton>
+            </div>
+          </InputGroupAddon>
+        </InputGroup>
+      </form>
+      <p className="text-center text-xs text-muted-foreground">{DISCLAIMER}</p>
+      <UploadDocumentDialog open={attachOpen} onOpenChange={setAttachOpen} />
+    </div>
   );
 }

@@ -101,7 +101,7 @@ export function ConversationView({ sessionId }: Readonly<{ sessionId: string }>)
     <div className="flex min-h-0 flex-1">
       <div className="flex min-h-0 min-w-0 flex-1 flex-col">
         {renderBody()}
-        <div className="border-t bg-background px-4 pt-3 pb-4">
+        <div className="bg-background px-4 pt-2 pb-3">
           <ChatInput
             value={draft}
             onChange={setDraft}

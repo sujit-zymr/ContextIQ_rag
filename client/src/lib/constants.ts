@@ -11,6 +11,9 @@ export const API_BASE_URL = (
 /** localStorage key holding the JWT access token. */
 export const TOKEN_STORAGE_KEY = "contextiq.access_token";
 
+/** localStorage key for the light/dark/system choice (next-themes). */
+export const THEME_STORAGE_KEY = "contextiq.theme";
+
 /** File types accepted by POST /documents/upload (server/app/api/documents.py). */
 export const SUPPORTED_FILE_EXTENSIONS = [
   ".pdf",

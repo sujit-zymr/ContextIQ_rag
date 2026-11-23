@@ -2,7 +2,6 @@
 
 import { usePathname } from "next/navigation";
 
-import { Separator } from "@/components/ui/separator";
 import { SidebarTrigger } from "@/components/ui/sidebar";
 import { useCurrentSession } from "@/hooks/useCurrentSession";
 
@@ -20,10 +19,9 @@ export function Header() {
   const title = useHeaderTitle();
 
   return (
-    <header className="sticky top-0 z-10 flex h-14 shrink-0 items-center gap-2 border-b bg-background/95 px-3 backdrop-blur supports-[backdrop-filter]:bg-background/80">
-      <SidebarTrigger aria-label="Toggle sidebar" />
-      <Separator orientation="vertical" className="mr-1 data-vertical:h-4 data-vertical:self-center" />
-      <h1 className="min-w-0 truncate text-sm font-medium" title={title}>
+    <header className="sticky top-0 z-10 flex h-16 shrink-0 items-center gap-2 border-b bg-background px-3 md:px-6">
+      <SidebarTrigger aria-label="Toggle sidebar" className="-ml-1 text-muted-foreground md:-ml-3" />
+      <h1 className="min-w-0 truncate text-lg font-semibold tracking-tight" title={title}>
         {title}
       </h1>
     </header>
