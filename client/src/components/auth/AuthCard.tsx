@@ -21,7 +21,7 @@ interface AuthCardProps {
 export function AuthCard({ title, description, children, footer }: AuthCardProps) {
   return (
     <main className="flex flex-1 flex-col items-center justify-center gap-8 px-4 py-10">
-      <Logo />
+      <Logo variant="full" className="h-14 sm:h-16" priority />
       <Card className="w-full max-w-sm">
         <CardHeader>
           <CardTitle className="text-xl tracking-tight">{title}</CardTitle>

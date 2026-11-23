@@ -1,11 +1,12 @@
 "use client";
 
-import { BookOpen, Sparkles } from "lucide-react";
+import { BookOpen } from "lucide-react";
 import { useMemo } from "react";
 
 import { AbstentionAlert } from "@/components/chat/AbstentionAlert";
 import { ClarificationBadge } from "@/components/chat/ClarificationBadge";
 import { MarkdownContent } from "@/components/chat/MarkdownContent";
+import { Logo } from "@/components/common/Logo";
 import { Button } from "@/components/ui/button";
 import { getAssistantMessageKind } from "@/lib/messages";
 import { useChatUiStore } from "@/store/useChatUiStore";
@@ -13,11 +14,8 @@ import type { MessageResponse } from "@/types/api";
 
 export function AssistantAvatar() {
   return (
-    <span
-      className="flex size-8 shrink-0 items-center justify-center rounded-lg bg-primary/15 text-primary"
-      aria-hidden
-    >
-      <Sparkles className="size-4" />
+    <span className="flex size-8 shrink-0 items-center justify-center" aria-hidden>
+      <Logo variant="mark" className="size-7" decorative />
     </span>
   );
 }

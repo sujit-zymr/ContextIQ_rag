@@ -4,7 +4,7 @@ Tracks implementation of [FRONTEND_IMPLEMENTATION_PLAN.md](FRONTEND_IMPLEMENTATI
 Work goes **one phase at a time**: each phase is reviewed and approved ("good to go")
 before the next one starts. Updated at the end of every phase.
 
-**Branch**: `feature/frontend-implementation` · **Last updated**: 2026-11-23 (UI redesign awaiting review; Phase 10 waiting for go-ahead)
+**Branch**: `feature/frontend-implementation` · **Last updated**: 2026-11-23 (UI redesign and logo committed; Phase 10 waiting for go-ahead)
 
 **Legend**: ✅ done · 🔍 done, awaiting review/commit · ⏸ waiting for go-ahead · ⬜ not started · ⚠️ needs attention
 
@@ -23,7 +23,7 @@ before the next one starts. Updated at the end of every phase.
 | 7 | Active chat page (answer / clarification / abstention) | ✅ Done | ✅ | ✅ `00b8db92` |
 | 8 | Sources panel, citation chips, freshness badges | ✅ Done | ✅ | ✅ `fe50ec7e` |
 | 9 | Documents page (table, upload, delete) | ✅ Done | ✅ | ✅ `164bfd4d` |
-| — | UI redesign to the light mockup + theme toggle (between 9 and 10) | 🔍 Awaiting review | ⬜ | ⬜ |
+| — | UI redesign to the light mockup + theme toggle, new logo (between 9 and 10) | ✅ Done | ✅ | ✅ `de395220` (+ logo commit) |
 | 10 | End-to-end testing on live backend, polish | ⏸ Waiting for go-ahead | ⬜ | ⬜ |
 
 ---
@@ -148,7 +148,7 @@ before the next one starts. Updated at the end of every phase.
 - **Fixed during testing**: the "51–55 of 55" range changed before the next page arrived; it now comes from the page shown
 - **Not verified**: against the live backend (it was down); real ingestion of PDF/DOCX files
 
-### UI redesign (light mockup + theme toggle) 🔍
+### UI redesign (light mockup + theme toggle) ✅
 Requested after Phase 9 from a design mockup. Decisions: light by default with a Light/Dark/System
 toggle (dark keeps the original palette); Chat nav item stays removed; "Attach document" opens the
 upload dialog; "Answer from selected sources" left out (backend has no source filter).
@@ -160,6 +160,7 @@ upload dialog; "Answer from selected sources" left out (backend has no source fi
 - [x] `ChatInput`: rounded box, "+ Attach document" → `UploadDocumentDialog` (extracted from `DocumentsView`), square send button, disclaimer line; no longer looks disabled when empty
 - [x] Answers: `prose-invert` only in dark mode; code blocks use `text-foreground` (were unreadable in light)
 - [x] Docs: plan §7.3–7.5, §7.7, §8, CLAUDE.md frontend conventions
+- [x] Logo: from `client/src/assets/ContextIQ_Logo.png` — transparent PNGs in `src/assets/` (full with tagline, wordmark without tagline, "C" mark with the three dots), each with a dark-theme copy (white "Context" text and dots); `Logo` component takes `variant`; full logo on sign-in pages, wordmark in the expanded sidebar, mark in the collapsed rail, welcome screen and assistant avatar; favicon replaced with the mark. Verified by screenshots in both themes (desktop, collapsed rail, 375px) and the 13 redesign tests
 - **Verified** (mock backend, headless Chrome): 13 tests — first visit light, sidebar items, welcome text and cards, prompt pre-fill + caret, input not dimmed when empty, Attach → upload → dialog closes with draft kept, answer and code text contrast in light and dark, Dark persists across reload, stored theme applied before page scripts (no flash), System follows the OS setting, Tab order, 375px no horizontal scroll, no console errors; screenshots of login / new chat / conversation / documents / menus in both themes at 1440px and 375px; type-check, lint, build
 - **Not verified**: live backend; the older phase-by-phase mock suites (lost when the scratchpad was cleared) were not re-run
 

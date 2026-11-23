@@ -65,7 +65,12 @@ export function AppSidebar() {
               className="h-10 hover:bg-transparent active:bg-transparent group-data-[collapsible=icon]:p-0!"
             >
               <Link href="/chat" onClick={closeOnMobile}>
-                <Logo wordmarkClassName="group-data-[collapsible=icon]:hidden" />
+                {/* Logo without the tagline when expanded; the "C" mark in the 64px rail. */}
+                <Logo variant="wordmark" className="h-9 group-data-[collapsible=icon]:hidden" priority />
+                <Logo
+                  variant="mark"
+                  className="hidden size-8 group-data-[collapsible=icon]:inline-flex"
+                />
               </Link>
             </SidebarMenuButton>
           </SidebarMenuItem>

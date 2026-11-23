@@ -649,6 +649,13 @@ Warning:            amber-500   (outdated freshness, abstention box)
 Danger:             red-500     (failed status, superseded freshness, delete)
 ```
 
+### 8.1a Logo
+Source: `client/src/assets/ContextIQ_Logo.png`. Derived transparent PNGs (light + dark copies):
+`logo-full-*` (mark + "ContextIQ" + tagline) on sign-in/register; `logo-wordmark-*` (no tagline)
+in the expanded sidebar; `logo-mark*` (the "C" with three dots, no sparkles) in the collapsed rail,
+the welcome screen, the assistant avatar and `app/favicon.ico`. `components/common/Logo.tsx`
+renders both theme copies and shows one with `dark:` classes (correct on first paint).
+
 ### 8.2 Layout Dimensions
 - **Sidebar**: 260px expanded / 64px collapsed (icon-only)
 - **Sources Panel**: 320px fixed right (desktop)

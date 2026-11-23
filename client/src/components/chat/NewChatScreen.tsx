@@ -43,7 +43,7 @@ export function NewChatScreen() {
       <div className="flex flex-1 flex-col items-center justify-center px-4 py-8">
         <div className="flex w-full max-w-3xl flex-col items-center gap-8">
           <div className="flex flex-col items-center gap-4 text-center">
-            <Logo withWordmark={false} />
+            <Logo variant="mark" className="size-12" decorative />
             <div className="flex flex-col gap-2">
               <h2 className="text-2xl font-semibold tracking-tight sm:text-3xl">
                 A clearer way to work with your knowledge.
