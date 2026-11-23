@@ -44,7 +44,13 @@ def build_rag_prompt(question: str, chunks: list[dict]) -> tuple[str, str]:
         if page is not None:
             source += f", page {page}"
 
-        if chunk_index is not None:
+        chunk_indexes = chunk.get("chunk_indexes") or []
+        pages = chunk.get("pages") or []
+        if len(pages) > 1:
+            source = source.replace(f", page {page}", f", pages {pages[0]}-{pages[-1]}")
+        if len(chunk_indexes) > 1:
+            source += f", chunks {chunk_indexes[0]}-{chunk_indexes[-1]}"
+        elif chunk_index is not None:
             source += f", chunk {chunk_index}"
 
         metadata = chunk.get("metadata") or {}

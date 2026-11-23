@@ -99,6 +99,34 @@ def fail_document_ingestion(document_id, message):
         )
 
 
+def get_chunks_by_index(requests):
+    """Fetch chunks by (document_id, chunk_index) pairs.
+
+    Returns {document_id (str): {chunk_index: {"content", "metadata"}}}; pairs
+    that do not exist (past the end of a document) are simply absent.
+    """
+    pairs = [(UUID(str(document_id)), int(index)) for document_id, index in requests]
+    if not pairs:
+        return {}
+    document_ids = [pair[0] for pair in pairs]
+    indexes = [pair[1] for pair in pairs]
+    with get_connection() as conn:
+        rows = conn.execute(
+            """SELECT c.document_id, c.chunk_index, c.content, c.metadata
+               FROM document_chunks c
+               JOIN unnest(%s::uuid[], %s::int[]) AS wanted(document_id, chunk_index)
+                 ON c.document_id = wanted.document_id AND c.chunk_index = wanted.chunk_index""",
+            (document_ids, indexes),
+        ).fetchall()
+    found = {}
+    for document_id, chunk_index, content, metadata in rows:
+        found.setdefault(str(document_id), {})[chunk_index] = {
+            "content": content,
+            "metadata": metadata or {},
+        }
+    return found
+
+
 def get_document(document_id):
     with get_connection() as conn:
         row = conn.execute(

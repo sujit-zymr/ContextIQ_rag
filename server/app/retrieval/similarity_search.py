@@ -1,12 +1,23 @@
 
+import logging
+
+from app.database.chunk_repository import get_chunks_by_index
 from app.database.connection import get_connection
 from app.ingestion.embedder import generate_query_embedding
 from app.observability import observation_span, set_span_output
+from app.retrieval.passages import build_passage, context_window, select_hits, window_indexes
 from app.retrieval.query_preprocessor import normalize_query
 from app.retrieval.reranker import rerank_chunks
 from app.retrieval.versioning import annotate_source_versions
 
+logger = logging.getLogger(__name__)
+
 RRF_K = 60
+# pgvector's HNSW index returns at most hnsw.ef_search rows (default 40); raise it
+# per query so the candidate LIMIT is actually honoured.
+MIN_EF_SEARCH = 40
+MAX_EF_SEARCH = 1000
+
 
 
 def search_similar_chunks(question, top_k=5):
@@ -29,6 +40,8 @@ def search_similar_chunks(question, top_k=5):
             as_type="retriever",
         ) as search_span:
             with get_connection() as conn:
+                ef_search = min(max(top_k, MIN_EF_SEARCH), MAX_EF_SEARCH)
+                conn.execute("SELECT set_config('hnsw.ef_search', %s, true)", (str(ef_search),))
                 results = conn.execute(
                     """
                     SELECT
@@ -80,8 +93,15 @@ def search_full_text_chunks(question, top_k=5):
         with get_connection() as conn:
             results = conn.execute(
                 """
+                -- OR semantics: websearch_to_tsquery() parses the question (stop
+                -- words, stemming, quoted phrases) but joins terms with AND, which a
+                -- natural question almost never satisfies within one chunk. Any
+                -- matching term qualifies; ts_rank_cd still ranks chunks with more
+                -- (and closer) matches higher.
                 WITH query AS (
-                    SELECT websearch_to_tsquery('english', %s) AS terms
+                    SELECT replace(
+                        websearch_to_tsquery('english', %s)::text, ' & ', ' | '
+                    )::tsquery AS terms
                 )
                 SELECT
                     d.id,
@@ -161,6 +181,40 @@ def _fuse_ranked_results(vector_results, full_text_results, top_k, rrf_k=RRF_K):
     return ranked[:top_k]
 
 
+def expand_to_passages(hits, top_k, window=None):
+    """Top `top_k` passages: each hit plus its neighbouring chunks, nearby hits merged.
+
+    Falls back to the plain top hits if the neighbouring chunks cannot be loaded.
+    """
+    window = context_window() if window is None else window
+    groups = select_hits(hits, top_k, window)
+    requests = [
+        (group[0]["document_id"], index)
+        for group in groups
+        if group[0].get("document_id")
+        for index in window_indexes(group, window)
+    ]
+    try:
+        with observation_span(
+            "rag.retrieval.context_expansion",
+            input_value={"passages": len(groups), "window": window, "chunks_requested": len(requests)},
+        ) as span:
+            found = get_chunks_by_index(requests)
+            passages = [
+                build_passage(group, found.get(str(group[0].get("document_id")), {}), window)
+                for group in groups
+            ]
+            set_span_output(span, {
+                "passages": len(passages),
+                "merged_hits": sum(len(group) - 1 for group in groups),
+                "context_chars": sum(len(p.get("content") or "") for p in passages),
+            })
+            return passages
+    except Exception as exc:
+        logger.warning("Context expansion failed; using the top chunks only: %s", exc)
+        return [group[0] for group in groups]
+
+
 def search_chunks(question, top_k=5, mode="hybrid"):
     """Search with vector, full-text, or RRF-fused hybrid retrieval."""
     if top_k <= 0:
@@ -188,7 +242,7 @@ def search_chunks(question, top_k=5, mode="hybrid"):
             full_text_results = search_full_text_chunks(normalized_question, candidate_k)
             fused_candidates = _fuse_ranked_results(vector_results, full_text_results, candidate_k)
             reranked = rerank_chunks(normalized_question, fused_candidates)
-            results = annotate_source_versions(reranked[:top_k])
+            results = annotate_source_versions(expand_to_passages(reranked, top_k))
             set_span_output(span, {
                 "retrieved_count": len(results),
                 "candidate_count": len(fused_candidates),

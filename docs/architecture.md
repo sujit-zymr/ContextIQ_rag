@@ -50,7 +50,10 @@ The ingestion pipeline handles multi-format document loading, structural extract
 
 ## 3. Chunking & Embedding
 
-- **Chunking Engine**: Uses `RecursiveCharacterTextSplitter` configured via `RAG_CHUNK_SIZE` (default: 200 chars) and `RAG_CHUNK_OVERLAP` (default: 40 chars).
+- **Chunking Engine**: Uses `RecursiveCharacterTextSplitter` configured via `RAG_CHUNK_SIZE` (default: 1000 chars, ~200-250 tokens) and `RAG_CHUNK_OVERLAP` (default: 150 chars). Splits at paragraphs, lines, then sentences (`. `), keeping a sentence's full stop with it.
+  - 1000 characters keeps a paragraph or short list together and stays within the embedding model's 256-token input (longer text would be truncated before embedding).
+  - **PDF**: pages are joined into one text before splitting, so passages that continue onto the next page stay together; each chunk records the page it starts on (`page`, plus `start_index`).
+  - **DOCX / Markdown**: headings build a section path (e.g. `Leave Policy > Planned leave`). It is stored as `section` (innermost heading) and `section_path`, and prepended to **every** chunk of the section, so each chunk says which section it belongs to.
 - **Embedding Model**: Local `sentence-transformers/all-MiniLM-L6-v2` generating 384-dimensional dense vectors.
 - **Processing**: Batch-encoded using PyTorch and normalized for cosine distance.
 
@@ -73,13 +76,14 @@ The storage engine runs on **PostgreSQL 16** with the **pgvector** extension:
 ContextIQ provides three retrieval modes:
 
 1. **Vector Retrieval**: Computes query cosine distance using pgvector `<=>` operator and converts to similarity score (`1 - cosine_distance`).
-2. **Full-Text Search (FTS)**: Uses PostgreSQL `websearch_to_tsquery('english', query)` scored with `ts_rank_cd`.
+2. **Full-Text Search (FTS)**: Parses the question with PostgreSQL `websearch_to_tsquery('english', query)` (stop words, stemming, quoted phrases), then joins the terms with **OR** instead of AND, scored with `ts_rank_cd` (chunks with more and closer matches rank higher). An AND query requires every question word in one chunk, which a natural-language question almost never satisfies.
 3. **Hybrid Retrieval (Default)**:
-   - Fetches candidate pools (default $3 \times top\_k$) from both vector and FTS retrieval.
+   - Fetches candidate pools ($\max(5 \times top\_k, 50)$) from both vector and FTS retrieval. The vector query raises `hnsw.ef_search` to the pool size for that query (pgvector's default of 40 would cap the results).
    - Combines ranked results using **Reciprocal Rank Fusion (RRF)** with standard constant $k=60$:
      $$RRF(d) = \sum_{m \in \{vector, fts\}} \frac{1}{60 + rank_m(d)}$$
    - Reranks fused candidates with `cross-encoder/ms-marco-MiniLM-L-6-v2`.
    - Fallback: If reranking fails or model is unavailable, gracefully falls back to the RRF rank score.
+   - **Context passages**: each of the best hits is expanded with its neighbouring chunks (`RAG_CONTEXT_WINDOW`, default 1 on each side), and hits close to a better hit in the same document are merged into it, so `top_k` is the number of *passages*. A passage spans at most 2 × window chunks either side of its best hit (≤ 5 chunks, ~4,500 chars by default); overlapping chunk text is joined once and the section path appears once. Each passage is one source (`S1`, ...) in the prompt and citations. If neighbouring chunks cannot be loaded, the top chunks are used as before.
    - Enriches results with temporal freshness status (`current`, `outdated`, `future`, `superseded`, `undated`).
 
 ---

@@ -13,78 +13,106 @@ from app.database.chunk_repository import (
     get_document,
     start_document_ingestion,
 )
-from app.ingestion.chunker import chunk_documents
+from app.ingestion.chunker import (
+    DEFAULT_CHUNK_OVERLAP,
+    DEFAULT_CHUNK_SIZE,
+    chunk_documents,
+    join_pages,
+)
 from app.ingestion.embedder import generate_embeddings
 from app.observability import observation_span, set_span_output
 
 
-def _section_documents(lines, source, heading_pattern, heading_level):
-    documents = []
-    section = "Document"
-    body = []
+class _SectionCollector:
+    """Collects body text per section, tracking the heading path ("A > B > C").
 
-    def flush():
-        content = "\n".join(body).strip()
-        if content:
-            documents.append(Document(
-                page_content=f"{section}\n\n{content}" if section != "Document" else content,
-                metadata={"source": str(source), "page": None, "section": section},
-            ))
+    Headings are kept in metadata (`section` = innermost heading, `section_path`
+    = full path), not in the text: the chunker adds the path to every chunk.
+    """
 
-    for line in lines:
-        match = heading_pattern.match(line)
-        if match:
-            flush()
-            section = heading_level(match, line)
-            body = []
+    def __init__(self, source):
+        self.source = str(source)
+        self.stack: list[tuple[int, str]] = []
+        self.body: list[str] = []
+        self.documents: list[Document] = []
+
+    def heading(self, level: int, title: str):
+        self.flush()
+        while self.stack and self.stack[-1][0] >= level:
+            self.stack.pop()
+        self.stack.append((level, title))
+
+    def line(self, text: str):
+        self.body.append(text)
+
+    def flush(self):
+        content = "\n".join(self.body).strip()
+        self.body = []
+        if not content:
+            return
+        if self.stack:
+            section = self.stack[-1][1]
+            section_path = " > ".join(title for _, title in self.stack)
         else:
-            body.append(line)
-    flush()
-    return documents
+            section, section_path = "Document", None
+        metadata = {"source": self.source, "page": None, "section": section}
+        if section_path:
+            metadata["section_path"] = section_path
+        self.documents.append(Document(page_content=content, metadata=metadata))
+
+
+_MARKDOWN_HEADING = re.compile(r"^\s{0,3}(#{1,6})\s+(.+?)\s*#*\s*$")
 
 
 def _extract_markdown(file_path):
     text = file_path.read_text(encoding="utf-8", errors="replace")
-    return _section_documents(
-        text.splitlines(), file_path, re.compile(r"^\s{0,3}#{1,6}\s+(.+?)\s*#*\s*$"),
-        lambda match, line: match.group(1).strip(),
-    )
+    sections = _SectionCollector(file_path)
+    in_code_block = False
+    for line in text.splitlines():
+        if line.lstrip().startswith("```"):
+            in_code_block = not in_code_block
+        match = None if in_code_block else _MARKDOWN_HEADING.match(line)
+        if match:
+            sections.heading(len(match.group(1)), match.group(2).strip())
+        else:
+            sections.line(line)
+    sections.flush()
+    return sections.documents
+
+
+def _docx_heading_level(paragraph):
+    """1-9 for "Heading N" styles (and 0 for "Title"); None for body text."""
+    name = (paragraph.style.name if paragraph.style else "").strip().lower()
+    if name == "title":
+        return 0
+    if name.startswith("heading"):
+        digits = re.findall(r"\d+", name)
+        return int(digits[0]) if digits else 1
+    return None
 
 
 def _extract_docx(file_path):
     from docx import Document as DocxDocument
 
-    paragraphs = DocxDocument(str(file_path)).paragraphs
-    sections = []
-    active_section = "Document"
-    body = []
-    for paragraph in paragraphs:
+    sections = _SectionCollector(file_path)
+    for paragraph in DocxDocument(str(file_path)).paragraphs:
         text = paragraph.text.strip()
         if not text:
             continue
-        if paragraph.style and paragraph.style.name.lower().startswith("heading"):
-            content = "\n".join(body).strip()
-            if content:
-                sections.append(Document(
-                    page_content=f"{active_section}\n\n{content}" if active_section != "Document" else content,
-                    metadata={"source": str(file_path), "page": None, "section": active_section},
-                ))
-            active_section, body = text, []
+        level = _docx_heading_level(paragraph)
+        if level is not None:
+            sections.heading(level, text)
         else:
-            body.append(text)
-    content = "\n".join(body).strip()
-    if content:
-        sections.append(Document(
-            page_content=f"{active_section}\n\n{content}" if active_section != "Document" else content,
-            metadata={"source": str(file_path), "page": None, "section": active_section},
-        ))
-    return sections
+            sections.line(text)
+    sections.flush()
+    return sections.documents
 
 
 def extract_documents(file_path: Path) -> list[Document]:
     extension = file_path.suffix.lower()
     if extension == ".pdf":
-        return PyPDFLoader(str(file_path)).load()
+        # One continuous text (with page offsets) so chunks can cross page breaks.
+        return join_pages(PyPDFLoader(str(file_path)).load())
     if extension == ".txt":
         text = file_path.read_text(encoding="utf-8", errors="replace")
         return [Document(page_content=text, metadata={"source": str(file_path), "page": None})]
@@ -96,8 +124,11 @@ def extract_documents(file_path: Path) -> list[Document]:
 
 
 def configured_chunking(chunk_size=None, overlap=None):
-    size = chunk_size if chunk_size is not None else int(os.getenv("RAG_CHUNK_SIZE", "200"))
-    chunk_overlap = overlap if overlap is not None else int(os.getenv("RAG_CHUNK_OVERLAP", "40"))
+    size = chunk_size if chunk_size is not None else int(os.getenv("RAG_CHUNK_SIZE", str(DEFAULT_CHUNK_SIZE)))
+    chunk_overlap = (
+        overlap if overlap is not None
+        else int(os.getenv("RAG_CHUNK_OVERLAP", str(DEFAULT_CHUNK_OVERLAP)))
+    )
     if size <= 0 or chunk_overlap < 0 or chunk_overlap >= size:
         raise ValueError("Chunk size must be positive and overlap must be between 0 and chunk size")
     return size, chunk_overlap
