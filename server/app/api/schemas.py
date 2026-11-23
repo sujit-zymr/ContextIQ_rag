@@ -38,6 +38,7 @@ class SessionResponse(BaseModel):
 
 class SendMessageRequest(BaseModel):
     content: str = Field(min_length=1, max_length=8000)
+    # Number of context passages (each a hit plus its neighbouring chunks).
     top_k: int = Field(default=5, ge=1, le=20)
 
 

@@ -48,8 +48,8 @@ def main():
         "--permission", action="append", dest="permissions",
         help="Permission label metadata; repeat to add multiple labels (not access control)",
     )
-    ingest_parser.add_argument("--chunk-size", type=int, help="Chunk size in characters; default from RAG_CHUNK_SIZE or 200")
-    ingest_parser.add_argument("--chunk-overlap", type=int, help="Chunk overlap in characters; default from RAG_CHUNK_OVERLAP or 40")
+    ingest_parser.add_argument("--chunk-size", type=int, help="Chunk size in characters; default from RAG_CHUNK_SIZE or 1000")
+    ingest_parser.add_argument("--chunk-overlap", type=int, help="Chunk overlap in characters; default from RAG_CHUNK_OVERLAP or 150")
 
     reindex_parser = subparsers.add_parser("reindex", help="Re-extract and re-embed a stored document")
     reindex_parser.add_argument("document_id", help="Document UUID returned by ingest")
@@ -74,7 +74,7 @@ def main():
     answer_parser.add_argument(
         "--top-k",
         type=int,
-        default=10
+        default=5
     )
     answer_parser.add_argument(
         "--search-mode", choices=("vector", "full-text", "hybrid"), default="hybrid",

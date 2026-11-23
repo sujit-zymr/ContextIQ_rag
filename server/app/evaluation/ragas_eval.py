@@ -369,8 +369,9 @@ def run_ragas_evaluation(
         ),
         "embedding_model": "all-MiniLM-L6-v2",
         "chunking_configuration": {
-            "chunk_size": int(os.getenv("RAG_CHUNK_SIZE", "200")),
-            "chunk_overlap": int(os.getenv("RAG_CHUNK_OVERLAP", "40")),
+            "chunk_size": int(os.getenv("RAG_CHUNK_SIZE", "1000")),
+            "chunk_overlap": int(os.getenv("RAG_CHUNK_OVERLAP", "150")),
+            "context_window": int(os.getenv("RAG_CONTEXT_WINDOW", "1")),
         },
         "retrieval_configuration": {
             "default_top_k": 5,
