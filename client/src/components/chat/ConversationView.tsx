@@ -7,6 +7,7 @@ import { toast } from "sonner";
 
 import { ChatContainer } from "@/components/chat/ChatContainer";
 import { ChatInput } from "@/components/chat/ChatInput";
+import { SourcesPanel } from "@/components/sources/SourcesPanel";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
 import {
@@ -97,19 +98,23 @@ export function ConversationView({ sessionId }: Readonly<{ sessionId: string }>)
   };
 
   return (
-    <div className="flex min-h-0 flex-1 flex-col">
-      {renderBody()}
-      <div className="border-t bg-background px-4 pt-3 pb-4">
-        <ChatInput
-          value={draft}
-          onChange={setDraft}
-          onSubmit={submit}
-          isBusy={isSending}
-          disabled={!messages}
-          placeholder="Ask a follow-up question…"
-          className="mx-auto max-w-3xl"
-        />
+    <div className="flex min-h-0 flex-1">
+      <div className="flex min-h-0 min-w-0 flex-1 flex-col">
+        {renderBody()}
+        <div className="border-t bg-background px-4 pt-3 pb-4">
+          <ChatInput
+            value={draft}
+            onChange={setDraft}
+            onSubmit={submit}
+            isBusy={isSending}
+            disabled={!messages}
+            placeholder="Ask a follow-up question…"
+            className="mx-auto max-w-3xl"
+          />
+        </div>
       </div>
+      {/* Right panel on desktop, drawer on smaller screens (plan §7.6). */}
+      {messages ? <SourcesPanel messages={messages} /> : null}
     </div>
   );
 }

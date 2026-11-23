@@ -27,7 +27,8 @@ function readSidebarOpenPreference(): boolean {
 
 /**
  * Authenticated app layout (plan §7.5): Sidebar | main content.
- * The Sources panel (right side) is added in Phase 8.
+ * The Sources panel (plan §7.6) is part of the conversation page, which owns
+ * the messages it shows (components/chat/ConversationView.tsx).
  */
 export function AppShell({ children }: Readonly<{ children: ReactNode }>) {
   const [defaultOpen] = useState(readSidebarOpenPreference);
