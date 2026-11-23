@@ -32,6 +32,10 @@ export function NewChatScreen() {
   const submit = async (content: string) => {
     try {
       await start(content);
+      // Next.js keeps this page mounted but hidden (<Activity>) after navigating
+      // to the conversation, so its state survives: clear the sent question, or
+      // the next "New chat" would show it and append the new question to it.
+      setQuestion("");
     } catch (error) {
       // The session could not be created; keep the question for a retry.
       toast.error(getErrorMessage(error));
