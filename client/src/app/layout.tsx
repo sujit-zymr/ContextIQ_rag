@@ -34,7 +34,9 @@ export default function RootLayout({ children }: LayoutProps<"/">) {
       lang="en"
       className={`dark ${inter.variable} ${geistMono.variable} h-full antialiased`}
     >
-      <body className="flex min-h-full flex-col">
+      {/* Browser extensions add attributes to <body> (e.g. contenteditable) before
+          React loads; this ignores <body>'s own attributes only, not its children. */}
+      <body className="flex min-h-full flex-col" suppressHydrationWarning>
         <Providers>
           <TooltipProvider>{children}</TooltipProvider>
         </Providers>
