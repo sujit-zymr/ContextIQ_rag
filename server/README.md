@@ -68,7 +68,11 @@ provider token usage when NVIDIA returns usage data.
 ## Ingest, reindex, and delete documents
 
 Ingestion accepts PDF, TXT, DOCX, Markdown (`.md`), and `.markdown` files.
-Markdown headings and DOCX heading paragraphs are retained as section metadata.
+Markdown headings and DOCX heading paragraphs are retained as section metadata
+(`section` and the full `section_path`, which also starts every chunk of the
+section). PDF pages are chunked as one continuous text so content that crosses
+a page break stays together; each chunk keeps the page it starts on.
+Chunks default to 1000 characters with 150 overlap.
 Set `RAG_CHUNK_SIZE` and `RAG_CHUNK_OVERLAP` in `.env` to configure defaults,
 or pass `--chunk-size` and `--chunk-overlap` to `ingest` or `reindex`:
 
@@ -105,9 +109,12 @@ python -m app.main answer "attendance requirement" --search-mode full-text
 Hybrid retrieval combines both ranked result sets with Reciprocal Rank Fusion
 (RRF); the CLI defaults to hybrid. Use `--search-mode vector` or
 `--search-mode full-text` to compare either method independently. Hybrid search
-fetches three times `top_k` candidates from each method, fuses ranks, reranks
-the fused candidates with `cross-encoder/ms-marco-MiniLM-L-6-v2`, then returns
-the requested `top_k` results. The first hybrid query may download the model.
+fetches `max(5 × top_k, 50)` candidates from each method (full-text matches
+any question term), fuses ranks, reranks the fused candidates with
+`cross-encoder/ms-marco-MiniLM-L-6-v2`, then returns `top_k` context passages:
+each top hit plus `RAG_CONTEXT_WINDOW` neighbouring chunks on each side
+(default 1), with nearby hits merged into one passage. The first hybrid query
+may download the model.
 Set `RAG_RERANKER_MODEL` to use another Sentence Transformers CrossEncoder.
 If loading or scoring fails, retrieval logs the error and returns the RRF
 ranking with `reranked: false` in the result metadata.

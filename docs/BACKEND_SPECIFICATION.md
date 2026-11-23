@@ -316,7 +316,7 @@ Send a question to the assistant inside a session.
   "top_k": 5
 }
 ```
-*(Parameters: `content` [1-8000 chars], `top_k` [default 5, min 1, max 20]).*
+*(Parameters: `content` [1-8000 chars], `top_k` [default 5, min 1, max 20] — the number of context **passages**: each is a retrieved chunk plus its neighbouring chunks, with nearby hits merged. Each passage is one citation; `chunk_index` and `page` refer to its best-matching chunk).*
 
 * **Citation object fields**: `source_id`, `document_id`, `title`, `filename`, `page` (PDF only, else `null`), `chunk_index`, `section`, `version`, `effective_date`, `expiry_date`, `as_of_date` (the date freshness was evaluated against, i.e. the request date), `source_freshness`, `has_competing_versions`, `competing_versions`.
 * **`source_freshness` values**: `current`, `outdated` (past `expiry_date`), `superseded` (a newer version of the same document exists), `future` (`effective_date` is after today), `undated` (no effective/expiry date in metadata).
@@ -535,13 +535,18 @@ User Query: "What is the notice period?"
            ▼
 [ Hybrid Retrieval ]
    * Dense Vector Search: pgvector <=> cosine distance (top candidates).
-   * Full-Text Search: PostgreSQL websearch_to_tsquery('english', ...) ranked by ts_rank_cd.
+   * Full-Text Search: PostgreSQL websearch_to_tsquery('english', ...) with terms joined by OR, ranked by ts_rank_cd.
    * Reciprocal Rank Fusion (RRF): Combines ranks with constant k=60.
            │
            ▼
 [ Cross-Encoder Reranker ]
    * Models candidate relevance using cross-encoder/ms-marco-MiniLM-L-6-v2.
    * Assigns calibrated relevance logit score.
+           │
+           ▼
+[ Context Passages ]
+   * Top hits + RAG_CONTEXT_WINDOW neighbouring chunks (default 1 each side).
+   * Nearby hits merged; top_k passages returned (one citation each).
            │
            ▼
 [ Evidence Gate (Abstention Threshold) ]

@@ -47,8 +47,9 @@ Add the generated secret to `JWT_SECRET_KEY` in `server/.env`, along with your `
 | `LANGFUSE_SECRET_KEY` | *(Optional)* | Langfuse project secret key |
 | `LANGFUSE_BASE_URL` | `https://cloud.langfuse.com` | Langfuse API host |
 | `LANGFUSE_TRACING_ENVIRONMENT` | `development` | Deployment environment label |
-| `RAG_CHUNK_SIZE` | `200` | Target character size for chunking |
-| `RAG_CHUNK_OVERLAP` | `40` | Overlap characters between chunks |
+| `RAG_CHUNK_SIZE` | `1000` | Target character size for chunking (keep ≤ ~1000 for the 256-token embedding model) |
+| `RAG_CHUNK_OVERLAP` | `150` | Overlap characters between chunks |
+| `RAG_CONTEXT_WINDOW` | `1` | Neighbouring chunks added on each side of a retrieved hit to form a passage (`0` = hits only) |
 | `RAG_RERANKER_MODEL` | `cross-encoder/ms-marco-MiniLM-L-6-v2` | SentenceTransformers CrossEncoder |
 | `RAG_MIN_VECTOR_SIMILARITY` | `0.35` | Minimum cosine similarity for vector mode |
 | `RAG_MIN_FULL_TEXT_SCORE` | `0.02` | Minimum text rank score for FTS mode |
@@ -168,3 +169,15 @@ The CI pipeline runs on every push and pull request via `.github/workflows/ci.ym
 - **Resolution**:
   - `sentence-transformers` automatically downloads `all-MiniLM-L6-v2` and `ms-marco-MiniLM-L-6-v2` to the HuggingFace cache directory on first use.
   - Subsequent queries use the local cache. In Docker, this is cached under `/app/.cache/huggingface`.
+
+### Changing chunking settings
+
+New chunk sizes only apply to documents ingested afterwards. Re-index existing
+documents to rebuild their chunks (the original file must still exist at its
+stored path; the old chunks are kept if re-indexing fails):
+
+```bash
+cd server
+python -m app.main reindex <document-uuid>
+```
+
