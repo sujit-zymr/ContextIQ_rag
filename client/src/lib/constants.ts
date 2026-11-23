@@ -32,3 +32,6 @@ export const SESSION_TITLE_FROM_QUESTION_LENGTH = 50;
 export const DEFAULT_TOP_K = 5;
 /** History size requested per session (backend max 500; returns the most recent N). */
 export const MESSAGE_HISTORY_LIMIT = 500;
+
+/** Rows per page on the Documents page (GET /documents allows 1–200). */
+export const DOCUMENTS_PAGE_SIZE = 50;

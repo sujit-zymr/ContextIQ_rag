@@ -1,10 +1,10 @@
 import type { Metadata } from "next";
 
-import { PhasePlaceholder } from "@/components/layout/PhasePlaceholder";
+import { DocumentsView } from "@/components/documents/DocumentsView";
 
 export const metadata: Metadata = { title: "Knowledge Base" };
 
-/** TEMPORARY: replaced by the document management page in Phase 9. */
+/** Shared document management (plan §7.7). */
 export default function DocumentsPage() {
-  return <PhasePlaceholder title="Knowledge Base" phase={9} />;
+  return <DocumentsView />;
 }

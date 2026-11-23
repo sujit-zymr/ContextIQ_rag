@@ -70,11 +70,10 @@ client/
 │   │
 │   ├── components/
 │   │   ├── layout/
-│   │   │   ├── AppShell.tsx             # SidebarProvider: Sidebar | Chat | Sources (Phase 8)
+│   │   │   ├── AppShell.tsx             # SidebarProvider: Sidebar | main content (fixed height)
 │   │   │   ├── Sidebar.tsx              # shadcn Sidebar: logo, New Chat, nav, sessions, user menu
 │   │   │   ├── SessionList.tsx          # Recent conversations (loading / error / empty states)
 │   │   │   ├── Header.tsx               # Top bar: sidebar toggle (drawer on mobile), page title
-│   │   │   └── PhasePlaceholder.tsx     # TEMPORARY content for screens of later phases
 │   │   │
 │   │   ├── auth/
 │   │   │   ├── AuthCard.tsx             # Shared centered card layout for auth pages
@@ -90,7 +89,7 @@ client/
 │   │   │   ├── ChatInput.tsx            # shadcn input-group: auto-growing textarea (≤6 rows) + send
 │   │   │   ├── NewChatScreen.tsx        # /chat welcome screen + first-message flow
 │   │   │   ├── MessageItem.tsx          # Renders user OR assistant message
-│   │   │   ├── AssistantMessage.tsx     # 3 states; inline [S1] citation chips added in Phase 8
+│   │   │   ├── AssistantMessage.tsx     # 3 states; [S1] citation chips + "View sources" button
 │   │   │   ├── MarkdownContent.tsx      # react-markdown + GFM + highlight (raw HTML not rendered)
 │   │   │   ├── UserMessage.tsx          # User message bubble
 │   │   │   ├── SuggestedPrompts.tsx     # Prompt cards on empty/new session
@@ -99,14 +98,16 @@ client/
 │   │   │   └── AbstentionAlert.tsx      # Info box for abstained=true responses
 │   │   │
 │   │   ├── sources/
-│   │   │   ├── SourcesPanel.tsx         # Right panel / mobile drawer
-│   │   │   ├── CitationCard.tsx         # One source card: title, page, section, freshness
-│   │   │   └── CitationChip.tsx         # Inline [S1] badge that opens SourcesPanel
+│   │   │   ├── SourcesPanel.tsx         # 320px right panel (≥1024px) / slide-over drawer (below)
+│   │   │   ├── CitationCard.tsx         # One source card: title, page, section, version, dates, freshness
+│   │   │   ├── CitationChip.tsx         # Inline [S1] button that opens SourcesPanel
+│   │   │   └── FreshnessBadge.tsx       # current / outdated / superseded / future (undated: none)
 │   │   │
 │   │   ├── documents/
+│   │   │   ├── DocumentsView.tsx        # /documents: list, states, pagination, upload + delete dialogs
 │   │   │   ├── DocumentTable.tsx        # List of uploaded docs with status & actions
-│   │   │   ├── DocumentUploadZone.tsx   # Drag-and-drop + file picker
-│   │   │   ├── DocumentStatusBadge.tsx  # completed / processing / failed badge
+│   │   │   ├── DocumentUploadZone.tsx   # Drag-and-drop + file picker, inline validation, upload
+│   │   │   ├── DocumentStatusBadge.tsx  # completed / processing / queued / failed badge
 │   │   │   └── DeleteConfirmDialog.tsx  # Confirmation modal before deletion
 │   │   │
 │   │   ├── ui/                          # shadcn/ui generated components (kebab-case, do not hand-roll)
@@ -138,6 +139,7 @@ client/
 │   │   │   └── useDocuments.ts          # list, detail, upload, delete
 │   │   ├── useAuthGuard.ts              # Redirect to /login (protected) or /chat (guest pages)
 │   │   ├── useCurrentSession.ts         # Route sessionId + its cached session
+│   │   ├── useMediaQuery.ts             # Generic media-query hook (Sources panel breakpoint)
 │   │   └── use-mobile.ts                # shadcn hook (rewritten with useSyncExternalStore)
 │   │
 │   ├── types/
@@ -154,8 +156,11 @@ client/
 │       ├── validation/auth.ts           # Zod schemas for login/register
 │       ├── chat.ts                      # deriveSessionTitle(), isValidSessionId()
 │       ├── messages.ts                  # getAssistantMessageKind() (reads message metadata)
-│       ├── utils.ts                     # cn() helper (shadcn) + date formatters
-│       └── constants.ts                 # APP_NAME, SUPPORTED_FILE_TYPES, MAX_FILE_SIZE
+│       ├── citations.ts                 # rehype plugin: [S1] markers → chips; competing versions
+│       ├── format.ts                    # formatDate() (date-only values in UTC)
+│       ├── utils.ts                     # cn() helper (shadcn)
+│       ├── documents.ts                 # Upload validation (extension, empty file), file type label
+│       └── constants.ts                 # APP_NAME, SUPPORTED_FILE_EXTENSIONS, limits, DOCUMENTS_PAGE_SIZE
 │
 ├── public/
 │   └── logo.svg                         # ContextIQ brand logo
@@ -532,10 +537,17 @@ Built on the shadcn `sidebar` component (`collapsible="icon"`), with `Ctrl/⌘+B
 - **Mobile**: hidden behind hamburger button in `Header`; opens as a slide-over drawer.
 
 ### 7.6 Sources Panel (Right Side)
-- **Visible**: only when `currentSession` has an assistant message with `citations.length > 0`.
-- **Desktop**: Fixed right panel (320px), appears alongside the chat.
-- **Mobile**: Bottom sheet / slide-over drawer, triggered by **"View Sources"** button in the assistant message footer.
+- **Visible**: only after the user opens it, and only for an answer with `citations.length > 0`.
+  It shows the sources of one answer at a time; it is rendered by `ConversationView`
+  (which owns the messages), not by `AppShell`.
+- **Desktop (≥1024px)**: Fixed right panel (320px), alongside the chat. Close button or `Esc`.
+  (Below 1024px a 320px panel would squeeze the chat, so the drawer is used instead.)
+- **Smaller screens**: slide-over drawer from the right (shadcn `sheet`).
+- Every answer with citations has a **"View sources (n)"** button under it (all screen sizes).
 - Clicking `[S1]` in the chat → `useChatUiStore.setActiveCitation(messageId, 'S1')` → panel opens + scrolls to that `CitationCard`.
+- Only markers matching the message's `citations` become chips; unknown markers and
+  markers inside code stay plain text.
+- Switching conversations closes the panel.
 
 **CitationCard** content:
 - `[S1]` label badge (indigo).
@@ -548,13 +560,20 @@ Built on the shadcn `sidebar` component (`collapsible="icon"`), with `Ctrl/⌘+B
   - `superseded` → Red: "Superseded"
   - `future` → Blue: "Not yet effective"
   - `undated` / `null` → no badge
-- Show `effective_date` / `expiry_date` when present.
+- Show `effective_date` / `expiry_date` when present (formatted, e.g. "Jan 1, 2026").
+- Document title (from metadata, falls back to the filename) above the filename.
+- When `has_competing_versions`, list `competing_versions` ("Versions found: …"; the
+  backend sends version labels such as `"2 (effective 2025-06-01)"`).
 
 > Note: Retrieved chunk text snippets are NOT returned by the messages API and will NOT be shown.
 
 ### 7.7 Document Management Page (`/documents`)
-- Page heading: **"Knowledge Base"**, with a subtitle saying the documents are shared by all users.
-- Calls `GET /documents` on mount.
+- Page heading: **"Knowledge Base"** (the header title), with a "Documents" section heading and a
+  subtitle saying the documents are shared by all users, plus the document count.
+- Calls `GET /documents` on mount, 50 per page (`DOCUMENTS_PAGE_SIZE`; backend max 200), with
+  Previous/Next when there are more. The list refreshes every 5 s while any document is
+  `queued` or `processing`.
+- Loading skeleton; load error → message + "Try again" (raw backend detail never shown).
 
 **Empty state** (zero documents):  
 Document icon + *"No documents yet. Upload your first document to get started."* + Upload button.
@@ -562,28 +581,34 @@ Document icon + *"No documents yet. Upload your first document to get started."*
 **Document Table** columns:
 - File type icon (by extension: PDF, DOCX, TXT, Markdown)
 - Filename (from `DocumentSummary.filename`)
-- Status badge: `completed` (green), `processing` (yellow + spinner), `failed` (red)
+- Status badge: `completed` (green), `processing` (yellow + spinner), `queued` (grey), `failed` (red;
+  `status_message` shown under the filename)
 - Chunk count
 - Uploaded date (formatted as "Nov 18, 2026")
 - Delete button (trash icon)
+- Below 640px the status, chunks and date move under the filename (only Document + delete columns).
 
 **Upload Document**:
-- Triggered by button → opens `DocumentUploadZone` (modal overlay or inline).
+- Triggered by button → opens `DocumentUploadZone` in a modal dialog. One file at a time.
 - Drag-and-drop area OR click to pick file.
 - **Supported extensions** (enforced client-side before upload): `.pdf`, `.docx`, `.txt`, `.md`, `.markdown`.
 - Validation before sending:
-  - Reject unsupported extension → error toast: *"Only PDF, DOCX, TXT, and Markdown files are supported."*
-  - Reject 0-byte file → error toast: *"The selected file is empty."*
+  - Reject unsupported extension → inline error in the dialog (§9): *"Only PDF, DOCX, TXT, and Markdown files are supported."*
+  - Reject 0-byte file → inline error: *"The selected file is empty."*
+  - No client-side size limit (the backend has none).
 - Calls `POST /documents/upload` as `multipart/form-data` with form field name `file`.
-- Shows loading spinner during upload.
+- Shows loading spinner during upload. The backend indexes the file inside the request, so the
+  dialog cannot be closed until it finishes (the result is reported there).
 - On success: show success toast with `message` from response, refresh document list.
-- On `422` from backend: show backend `detail` message.
-- On `500`: show *"Document upload failed. Please try a different file."*
+- On `422` from backend: toast with the backend `detail` message; the dialog stays open.
+- On `500`: toast *"Document upload failed. Please try a different file."*
 
 **Delete Document**:
 - Click trash icon → `DeleteConfirmDialog` modal.
 - Modal text: *"Delete [filename]? This will remove the document and all its indexed chunks from the shared knowledge base for all users. This cannot be undone."*
-- **Confirm** → `DELETE /documents/{id}` → remove from list locally + show success toast.
+- **Confirm** → `DELETE /documents/{id}` → remove from list locally at once (restored if the
+  delete fails) + show success toast. `404` → toast "Document not found." and the list resyncs.
+  Deleting the only row of the last page goes back one page.
 - **Cancel** → close modal.
 
 ---

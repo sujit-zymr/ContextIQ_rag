@@ -4,7 +4,7 @@ Tracks implementation of [FRONTEND_IMPLEMENTATION_PLAN.md](FRONTEND_IMPLEMENTATI
 Work goes **one phase at a time**: each phase is reviewed and approved ("good to go")
 before the next one starts. Updated at the end of every phase.
 
-**Branch**: `feature/frontend-implementation` · **Last updated**: 2026-11-20 (Phase 7 done; Phase 8 waiting for go-ahead)
+**Branch**: `feature/frontend-implementation` · **Last updated**: 2026-11-23 (Phases 8 and 9 committed; Phase 10 waiting for go-ahead)
 
 **Legend**: ✅ done · 🔍 done, awaiting review/commit · ⏸ waiting for go-ahead · ⬜ not started · ⚠️ needs attention
 
@@ -20,10 +20,10 @@ before the next one starts. Updated at the end of every phase.
 | 4 | Login + Register pages | ✅ Done | ✅ | ✅ `15dbcaf9` |
 | 5 | App shell: Sidebar + Header | ✅ Done | ✅ | ✅ `96a5d02c` |
 | 6 | New Chat welcome screen + suggested prompts | ✅ Done | ✅ | ✅ `ceab8988` |
-| 7 | Active chat page (answer / clarification / abstention) | ✅ Done | ✅ | ✅ (this commit) |
-| 8 | Sources panel, citation chips, freshness badges | ⏸ Next (waiting for go-ahead) | ⬜ | ⬜ |
-| 9 | Documents page (table, upload, delete) | ⬜ | ⬜ | ⬜ |
-| 10 | End-to-end testing on live backend, polish | ⬜ | ⬜ | ⬜ |
+| 7 | Active chat page (answer / clarification / abstention) | ✅ Done | ✅ | ✅ `00b8db92` |
+| 8 | Sources panel, citation chips, freshness badges | ✅ Done | ✅ | ✅ `fe50ec7e` |
+| 9 | Documents page (table, upload, delete) | ✅ Done | ✅ | ✅ (this commit) |
+| 10 | End-to-end testing on live backend, polish | ⏸ Waiting for go-ahead | ⬜ | ⬜ |
 
 ---
 
@@ -118,17 +118,36 @@ before the next one starts. Updated at the end of every phase.
 - **Not verified**: real AI answers (paid `POST /messages` not run); Phase 5/6 mock suites not re-run after the UUID check (their mocks used non-UUID ids; the first-message flow is covered by the Phase 7 suite)
 - **Test data left in the live DB**: user `contextiq-e2e-<timestamp>@example.com` with a few empty "E2E …" sessions (no delete endpoint)
 
-### Phase 8 — Sources panel ⬜
-- [ ] `components/sources/SourcesPanel.tsx` (desktop panel / mobile drawer)
-- [ ] `CitationChip.tsx` (inline `[S1]`), `CitationCard.tsx` (file, page/section, version, dates)
-- [ ] Freshness badges: current / outdated / superseded / future / undated
+### Phase 8 — Sources panel ✅
+- [x] `components/sources/SourcesPanel.tsx` — 320px right panel at ≥1024px (close button, `Esc`), slide-over drawer (shadcn `sheet`) below; shows one answer's sources; scrolls to and highlights the clicked citation; rendered by `ConversationView`
+- [x] `CitationChip.tsx` — inline `[S1]` button (labelled with the file name, `aria-pressed` while its card is shown); `lib/citations.ts` rehype plugin turns only markers that match the message's citations into chips (unknown markers and code stay text)
+- [x] `CitationCard.tsx` — title, filename, page/section, version, effective/expiry/checked dates (`lib/format.ts`), competing versions
+- [x] `FreshnessBadge.tsx` — current (green) / outdated (amber) / superseded (red) / future (blue); undated or null → none
+- [x] "View sources (n)" button under every answer with citations (all screen sizes)
+- [x] `hooks/useMediaQuery.ts`; no new npm dependencies
+- **Verified**:
+  - 21 browser tests against a mock backend (pass) — chips for known markers in order (incl. `[S2][S3]`), `[S9]` and code stay text, no chips on clarification/abstention, panel hidden until opened, chip → 320px panel with the right card highlighted, card fields + date formatting, all 4 badge colours and undated → none, section + competing versions, scroll to S8, no overflow with long names, close button / `Esc` / "View sources", keyboard Enter on a chip, follow-up answer opens its own sources, panel closes on conversation switch, 1024px no horizontal scroll, 375px drawer (open from chip and button, `Esc` and close button), no console errors
+  - Phase 7 suite re-run as regression (22 tests, pass), including the Phase 6 first-message flow
+  - type-check, lint, build
+- **Not verified**: real citations from the live backend (backend was down, and producing an answer is a paid NVIDIA call)
+- **Decision**: the panel opens only when the user clicks a chip or "View sources" (it does not auto-open on desktop)
 
-### Phase 9 — Documents page ⬜
-- [ ] `app/documents/page.tsx` — "Knowledge Base" (shared) heading, empty state
-- [ ] `DocumentTable`, `DocumentStatusBadge`, `DocumentUploadZone` (client-side extension + empty-file checks), `DeleteConfirmDialog`
-- [ ] `components/common/Spinner.tsx`, `EmptyState.tsx`
+### Phase 9 — Documents page ✅
+- [x] `app/(app)/documents/page.tsx` → `DocumentsView` — "Knowledge Base" header, shared-by-all-users subtitle + count, empty state, skeleton, load error + Try again, Previous/Next pagination (50 per page)
+- [x] `DocumentTable` — type tag (PDF/DOCX/TXT/MD), filename, status, chunks, "Nov 18, 2026" date, labelled delete button; failed rows show `status_message`; on phones status/chunks/date move under the filename
+- [x] `DocumentStatusBadge` — completed / processing (spinner) / queued / failed; list auto-refreshes every 5 s while any document is queued or processing
+- [x] `DocumentUploadZone` in a dialog — drag-and-drop or browse, one file at a time; inline errors for unsupported extension / empty file (nothing sent); spinner while the server indexes; dialog can't be closed mid-upload; success toast + list refresh; 422 → backend detail toast; 500 → generic toast
+- [x] `DeleteConfirmDialog` — "…from the shared knowledge base for all users. This cannot be undone."; row removed at once, restored on failure; 404 → "Document not found."
+- [x] `components/common/EmptyState.tsx`, `lib/documents.ts`, `lib/format.ts` dates now "Nov 18, 2026" everywhere (citation cards too); shadcn `spinner` used (no separate `common/Spinner`)
+- [x] Removed the temporary `PhasePlaceholder` (no placeholders left); no new npm dependencies
+- **Verified**:
+  - 21 browser tests against a mock documents API (pass, 3 runs in a row) — empty state, page title, .png / no-extension / empty file rejected inline with no request, valid upload (spinner, can't close, toast, row added, single POST), 422 detail toast, 500 generic toast (no raw detail), drag-and-drop, two-file drop rejected, table cells + date format, failed row, processing → completed by auto-refresh, delete dialog text + Cancel, confirm delete (immediate removal, toast, single DELETE), 404 delete, pagination 1–50 / 51–55, last-row-on-page delete, list error + retry, 375px (no horizontal scroll, details under filename, upload dialog), no console errors
+  - Phase 8 (21) and Phase 7 (22) suites re-run (pass)
+  - type-check, lint, build
+- **Fixed during testing**: the "51–55 of 55" range changed before the next page arrived; it now comes from the page shown
+- **Not verified**: against the live backend (it was down); real ingestion of PDF/DOCX files
 
-### Phase 10 — End-to-end & polish ⬜
+### Phase 10 — End-to-end & polish ⏸
 - [ ] Run the full acceptance checklist (below) against the **live backend**
 - [ ] Responsive polish (375px), console-error sweep, TypeScript cleanup
 

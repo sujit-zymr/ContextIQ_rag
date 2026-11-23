@@ -11,12 +11,22 @@ import {
 } from "@/services/document.service";
 import type { DocumentListParams, DocumentListResponse } from "@/types/api";
 
-/** GET /documents. The previous page stays visible while the next one loads. */
+/** While any listed document is still being ingested, refresh the list this often. */
+const PROCESSING_REFETCH_MS = 5000;
+
+/**
+ * GET /documents. The previous page stays visible while the next one loads,
+ * and the list refreshes itself while a document is `queued` or `processing`.
+ */
 export function useDocumentsQuery(params: DocumentListParams = {}) {
   return useQuery({
     queryKey: queryKeys.documents.list(params),
     queryFn: ({ signal }) => listDocuments(params, signal),
     placeholderData: keepPreviousData,
+    refetchInterval: (query) =>
+      query.state.data?.items.some((doc) => doc.status === "processing" || doc.status === "queued")
+        ? PROCESSING_REFETCH_MS
+        : false,
   });
 }
 
