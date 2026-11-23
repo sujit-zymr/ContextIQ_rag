@@ -14,6 +14,7 @@ import {
 } from "@/components/ui/sidebar";
 import { useSessionsQuery } from "@/hooks/queries/useSessions";
 import { useCurrentSessionId } from "@/hooks/useCurrentSession";
+import { cn } from "@/lib/utils";
 
 const SKELETON_ROWS = 5;
 
@@ -62,12 +63,17 @@ export function SessionList() {
     <SidebarMenu>
       {sessions.map((session) => {
         const isActive = session.id === currentSessionId;
+        const hasBadge = session.message_count > 0;
         return (
           <SidebarMenuItem key={session.id}>
             <SidebarMenuButton
               asChild
               isActive={isActive}
-              className="data-[active=true]:shadow-[inset_2px_0_0_var(--sidebar-primary)]"
+              // pr-8 keeps a truncated title clear of the message-count badge.
+              className={cn(
+                "data-[active=true]:shadow-[inset_2px_0_0_var(--sidebar-primary)]",
+                hasBadge && "pr-8",
+              )}
             >
               <Link
                 href={`/chat/${session.id}`}
@@ -79,7 +85,7 @@ export function SessionList() {
                 <span>{session.title}</span>
               </Link>
             </SidebarMenuButton>
-            {session.message_count > 0 ? (
+            {hasBadge ? (
               <SidebarMenuBadge aria-label={`${session.message_count} messages`}>
                 {session.message_count}
               </SidebarMenuBadge>

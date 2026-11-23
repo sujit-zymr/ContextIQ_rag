@@ -528,8 +528,9 @@ Built on the shadcn `sidebar` component (`collapsible="icon"`), with `Ctrl/⌘+B
   - Active session: indigo left border highlight, based on the current route `sessionId` (not on `status`).
   - Click → `router.push('/chat/' + session.id)`.
 - **Navigation**:
-  - 💬 Chat → `/chat`
   - 📄 Documents → `/documents`
+  - No separate "Chat" item: it duplicated **New Chat** and the conversation list, which already lead to the chat pages.
+- **Message count badge**: the session button reserves right padding so a truncated title never runs under the badge.
 - **Bottom**:
   - User email (from `useAuthStore.user.email`).
   - Logout button → `useAuthStore.logout()`.

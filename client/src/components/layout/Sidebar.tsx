@@ -1,6 +1,6 @@
 "use client";
 
-import { ChevronsUpDown, FileText, LogOut, MessageSquare, Plus } from "lucide-react";
+import { ChevronsUpDown, FileText, LogOut, Plus } from "lucide-react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 
@@ -36,8 +36,8 @@ const ACTIVE_ITEM = "data-[active=true]:shadow-[inset_2px_0_0_var(--sidebar-prim
 /** Centre the 32px icon buttons in the 64px collapsed rail (plan §8.2). */
 const ICON_MODE_CENTER = "group-data-[collapsible=icon]:items-center";
 
+/** Chats are reached through "New chat" and "Recent conversations", so there is no Chat item. */
 const NAV_ITEMS = [
-  { href: "/chat", label: "Chat", icon: MessageSquare, match: (p: string) => p.startsWith("/chat") },
   {
     href: "/documents",
     label: "Documents",

@@ -22,7 +22,7 @@ before the next one starts. Updated at the end of every phase.
 | 6 | New Chat welcome screen + suggested prompts | ✅ Done | ✅ | ✅ `ceab8988` |
 | 7 | Active chat page (answer / clarification / abstention) | ✅ Done | ✅ | ✅ `00b8db92` |
 | 8 | Sources panel, citation chips, freshness badges | ✅ Done | ✅ | ✅ `fe50ec7e` |
-| 9 | Documents page (table, upload, delete) | ✅ Done | ✅ | ✅ (this commit) |
+| 9 | Documents page (table, upload, delete) | ✅ Done | ✅ | ✅ `164bfd4d` |
 | 10 | End-to-end testing on live backend, polish | ⏸ Waiting for go-ahead | ⬜ | ⬜ |
 
 ---
@@ -79,7 +79,7 @@ before the next one starts. Updated at the end of every phase.
 - [x] Added shadcn `sidebar` (+ `use-mobile` hook, rewritten with `useSyncExternalStore` to fix a lint error)
 - [x] `app/(app)/layout.tsx` — route group for signed-in screens: Suspense + `RequireAuth` + `AppShell`
 - [x] `components/layout/AppShell.tsx` — `SidebarProvider` (260px / 64px), restores collapsed preference from cookie
-- [x] `components/layout/Sidebar.tsx` — logo, New chat, Chat/Documents nav, recent conversations, user menu with Log out; icon-only collapse (`Ctrl/⌘+B`), mobile drawer
+- [x] `components/layout/Sidebar.tsx` — logo, New chat, Documents nav (Chat item removed after Phase 9 review: duplicated New chat and the conversation list), recent conversations, user menu with Log out; icon-only collapse (`Ctrl/⌘+B`), mobile drawer
 - [x] `components/layout/SessionList.tsx` — all sessions newest first (archived included), message-count badge, active indigo left bar, skeleton / error + Retry / empty states
 - [x] `components/layout/Header.tsx` — sidebar toggle + title ("New chat", session title, "Knowledge Base")
 - [x] `hooks/useCurrentSession.ts`
