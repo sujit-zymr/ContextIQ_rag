@@ -28,12 +28,14 @@ The interface should look and feel like a real SaaS AI product — not a demo.
 
 | Concern | Decision | Reason |
 |---|---|---|
-| Framework | **Next.js 14+** (App Router) | SSR + file-based routing + API routes if needed |
+| Framework | **Next.js 16** (App Router, Turbopack) | File-based routing; current stable release |
 | Language | **TypeScript** (strict mode) | Type safety aligned with Pydantic backend models |
-| Styling | **Tailwind CSS** | Utility-first; pairs perfectly with shadcn/ui primitives |
-| Component Library | **Radix UI** primitives + custom Tailwind components | Accessible, headless; avoids heavy opinionated libraries |
+| Styling | **Tailwind CSS v4** (CSS-first config in `globals.css`, no `tailwind.config.ts`) | Utility-first; the styling layer shadcn/ui is built on |
+| Component Library | **shadcn/ui** (CLI v4, `new-york` style, Radix UI primitives) | Components are generated into `src/components/ui/` and owned by us; accessible Radix primitives underneath; no runtime component-library dependency |
+| Toasts | **sonner** (via the shadcn `sonner` component) | shadcn's recommended toast solution |
 | Icons | **lucide-react** | Already in shadcn ecosystem; clean and consistent |
-| State | **Zustand** (3 stores: auth, chat, documents) | Lightweight; shared state only where genuinely needed |
+| Server state | **TanStack Query v5** (`@tanstack/react-query`) | Caching, request dedup, loading/error states, invalidation after mutations, optimistic updates, AbortSignal wiring for all backend data (sessions, messages, documents) |
+| Client state | **Zustand** (2 stores: auth, chat UI) | Only state that lives in the browser: token/user/auth status and UI state (citation panel, sidebar). Never holds server data |
 | Forms | **React Hook Form** + **Zod** | Type-safe form validation mirroring backend Pydantic rules |
 | Markdown Rendering | **react-markdown** + **remark-gfm** + **rehype-highlight** | Correctly renders tables, lists, code blocks in AI answers |
 | HTTP Client | **Native fetch** with a centralized wrapper | No extra dependency; interceptors for auth headers & 401s |
@@ -49,58 +51,75 @@ Location: `client/`
 client/
 ├── src/
 │   ├── app/
-│   │   ├── layout.tsx                   # Root layout: ThemeProvider, AuthGuard
+│   │   ├── globals.css                  # Tailwind v4 + shadcn theme tokens (ContextIQ dark palette)
+│   │   ├── layout.tsx                   # Root layout: DM Sans font, theme-ready <html>, Toaster (inside Providers)
+│   │   ├── providers.tsx                # Client providers: QueryClientProvider, auth bootstrap
 │   │   ├── page.tsx                     # Root: redirect to /chat or /login
 │   │   ├── login/
 │   │   │   └── page.tsx                 # Login page
 │   │   ├── register/
 │   │   │   └── page.tsx                 # Registration page
-│   │   ├── chat/
-│   │   │   ├── page.tsx                 # New chat: welcome screen + prompt suggestions
-│   │   │   └── [sessionId]/
-│   │   │       └── page.tsx             # Active conversation view
-│   │   └── documents/
-│   │       └── page.tsx                 # Document management page
+│   │   └── (app)/                       # Route group: signed-in screens share one layout
+│   │       ├── layout.tsx               # Suspense + RequireAuth + AppShell
+│   │       ├── chat/
+│   │       │   ├── page.tsx             # New chat: welcome screen + prompt suggestions
+│   │       │   └── [sessionId]/
+│   │       │       └── page.tsx         # Active conversation view
+│   │       └── documents/
+│   │           └── page.tsx             # Document management page
 │   │
 │   ├── components/
 │   │   ├── layout/
-│   │   │   ├── AppShell.tsx             # 3-panel coordinator: Sidebar | Chat | Sources
-│   │   │   ├── Sidebar.tsx              # Left sidebar: logo, New Chat, session list, nav
-│   │   │   └── Header.tsx               # Top bar: session title, mobile menu button
+│   │   │   ├── AppShell.tsx             # SidebarProvider: Sidebar | main content (fixed height)
+│   │   │   ├── Sidebar.tsx              # shadcn Sidebar: logo, New Chat, nav, sessions, user menu
+│   │   │   ├── SessionList.tsx          # Recent conversations (loading / error / empty states)
+│   │   │   ├── Header.tsx               # Top bar: sidebar toggle (drawer on mobile), page title
 │   │   │
 │   │   ├── auth/
+│   │   │   ├── AuthCard.tsx             # Shared centered card layout for auth pages
 │   │   │   ├── LoginForm.tsx            # Email + password form
-│   │   │   └── RegisterForm.tsx         # Email + password + confirm form
+│   │   │   ├── RegisterForm.tsx         # Email + password + confirm form
+│   │   │   ├── PasswordInput.tsx        # Input with show/hide toggle
+│   │   │   └── RouteGuards.tsx          # RequireAuth, GuestOnly, RootRedirect
 │   │   │
 │   │   ├── chat/
+│   │   │   ├── ConversationRoute.tsx    # Validates the route id (UUID), remounts per session
+│   │   │   ├── ConversationView.tsx     # /chat/[id]: activate, history, follow-ups, 404, errors
 │   │   │   ├── ChatContainer.tsx        # Message list + scroll-to-bottom manager
-│   │   │   ├── ChatInput.tsx            # Multiline textarea + send button
+│   │   │   ├── ChatInput.tsx            # shadcn input-group: auto-growing textarea (≤6 rows) + send
+│   │   │   ├── NewChatScreen.tsx        # /chat welcome screen + first-message flow
 │   │   │   ├── MessageItem.tsx          # Renders user OR assistant message
-│   │   │   ├── AssistantMessage.tsx     # Markdown + inline [S1] citation chips
+│   │   │   ├── AssistantMessage.tsx     # 3 states; [S1] citation chips + "View sources" button
+│   │   │   ├── MarkdownContent.tsx      # react-markdown + GFM + highlight (raw HTML not rendered)
 │   │   │   ├── UserMessage.tsx          # User message bubble
 │   │   │   ├── SuggestedPrompts.tsx     # Prompt cards on empty/new session
-│   │   │   ├── TypingIndicator.tsx      # Skeleton while awaiting backend response
+│   │   │   ├── TypingIndicator.tsx      # 3-dot pulse while awaiting backend response
 │   │   │   ├── ClarificationBadge.tsx   # Visual indicator for needs_clarification=true
 │   │   │   └── AbstentionAlert.tsx      # Info box for abstained=true responses
 │   │   │
 │   │   ├── sources/
-│   │   │   ├── SourcesPanel.tsx         # Right panel / mobile drawer
-│   │   │   ├── CitationCard.tsx         # One source card: title, page, section, freshness
-│   │   │   └── CitationChip.tsx         # Inline [S1] badge that opens SourcesPanel
+│   │   │   ├── SourcesPanel.tsx         # 320px right panel (≥1024px) / slide-over drawer (below)
+│   │   │   ├── CitationCard.tsx         # One source card: title, page, section, version, dates, freshness
+│   │   │   ├── CitationChip.tsx         # Inline [S1] button that opens SourcesPanel
+│   │   │   └── FreshnessBadge.tsx       # current / outdated / superseded / future (undated: none)
 │   │   │
 │   │   ├── documents/
+│   │   │   ├── DocumentsView.tsx        # /documents: list, states, pagination, upload + delete dialogs
 │   │   │   ├── DocumentTable.tsx        # List of uploaded docs with status & actions
-│   │   │   ├── DocumentUploadZone.tsx   # Drag-and-drop + file picker
-│   │   │   ├── DocumentStatusBadge.tsx  # completed / processing / failed badge
+│   │   │   ├── DocumentUploadZone.tsx   # Drag-and-drop + file picker, inline validation, upload
+│   │   │   ├── UploadDocumentDialog.tsx # Upload modal (Documents page + "Attach document" in ChatInput)
+│   │   │   ├── DocumentStatusBadge.tsx  # completed / processing / queued / failed badge
 │   │   │   └── DeleteConfirmDialog.tsx  # Confirmation modal before deletion
 │   │   │
-│   │   └── ui/
-│   │       ├── Button.tsx
-│   │       ├── Input.tsx
-│   │       ├── Badge.tsx
-│   │       ├── Dialog.tsx
-│   │       ├── Tooltip.tsx
-│   │       ├── Spinner.tsx
+│   │   ├── ui/                          # shadcn/ui generated components (kebab-case, do not hand-roll)
+│   │   │   ├── button.tsx  input.tsx  label.tsx  form.tsx  textarea.tsx
+│   │   │   ├── badge.tsx  card.tsx  dialog.tsx  alert-dialog.tsx  sheet.tsx
+│   │   │   ├── tooltip.tsx  scroll-area.tsx  skeleton.tsx  separator.tsx
+│   │   │   ├── table.tsx  dropdown-menu.tsx  avatar.tsx  sonner.tsx
+│   │   │   ├── field.tsx  alert.tsx  spinner.tsx  sidebar.tsx  input-group.tsx
+│   │   └── common/                      # Small app-specific primitives not provided by shadcn
+│   │       ├── Logo.tsx
+│   │       ├── PageLoader.tsx
 │   │       └── EmptyState.tsx
 │   │
 │   ├── services/
@@ -110,33 +129,48 @@ client/
 │   │   └── document.service.ts          # listDocuments(), uploadDocument(), deleteDocument(), getDetail()
 │   │
 │   ├── store/
-│   │   ├── useAuthStore.ts              # user, token, isAuthenticated, logout()
-│   │   ├── useChatStore.ts              # sessions, currentSession, messages, activeCitationSourceId
-│   │   └── useDocumentStore.ts          # documents, uploadStatus, pagination
+│   │   ├── useAuthStore.ts              # status, token, user, initialize(), login(), logout()
+│   │   └── useChatUiStore.ts            # activeCitationSourceId, sources panel + sidebar UI state
 │   │
 │   ├── hooks/
-│   │   ├── useSession.ts                # Load session & history on mount; handle first message
-│   │   ├── useDocuments.ts              # Fetch, upload, delete documents
-│   │   └── useAuthGuard.ts              # Redirect to /login if no valid token
+│   │   ├── queries/
+│   │   │   ├── useSessions.ts           # sessions list, create, activate
+│   │   │   ├── useMessages.ts           # message history + send (optimistic)
+│   │   │   ├── useStartConversation.ts  # /chat: create session → send → navigate
+│   │   │   └── useDocuments.ts          # list, detail, upload, delete
+│   │   ├── useAuthGuard.ts              # Redirect to /login (protected) or /chat (guest pages)
+│   │   ├── useCurrentSession.ts         # Route sessionId + its cached session
+│   │   ├── useMediaQuery.ts             # Generic media-query hook (Sources panel breakpoint)
+│   │   └── use-mobile.ts                # shadcn hook (rewritten with useSyncExternalStore)
 │   │
 │   ├── types/
 │   │   ├── api.ts                       # Exact mirrors of backend Pydantic models
 │   │   ├── chat.ts                      # UI-layer session & message types
 │   │   └── document.ts                  # UI-layer document types
 │   │
-│   ├── lib/
-│   │   ├── utils.ts                     # classnames helper (cn), date formatters
-│   │   └── constants.ts                 # APP_NAME, SUPPORTED_FILE_TYPES, MAX_FILE_SIZE
-│   │
-│   └── styles/
-│       └── globals.css                  # Tailwind base + ContextIQ CSS variables
+│   └── lib/
+│       ├── query-client.ts              # QueryClient factory + defaults (retry, staleTime)
+│       ├── query-keys.ts                # Single source of truth for query keys
+│       ├── token-storage.ts             # localStorage token accessors (SSR-safe)
+│       ├── jwt.ts                       # Read `exp` from the JWT to schedule auto-logout
+│       ├── errors.ts                    # User-safe messages; inline vs toast classification
+│       ├── validation/auth.ts           # Zod schemas for login/register
+│       ├── chat.ts                      # deriveSessionTitle(), isValidSessionId()
+│       ├── messages.ts                  # getAssistantMessageKind() (reads message metadata)
+│       ├── citations.ts                 # rehype plugin: [S1] markers → chips; competing versions
+│       ├── format.ts                    # formatDate() (date-only values in UTC)
+│       ├── utils.ts                     # cn() helper (shadcn)
+│       ├── documents.ts                 # Upload validation (extension, empty file), file type label
+│       └── constants.ts                 # APP_NAME, SUPPORTED_FILE_EXTENSIONS, limits, DOCUMENTS_PAGE_SIZE
 │
 ├── public/
 │   └── logo.svg                         # ContextIQ brand logo
 ├── .env.example
 ├── .env.local                           # (git-ignored)
+├── components.json                  # shadcn/ui configuration
 ├── next.config.ts
-├── tailwind.config.ts
+├── postcss.config.mjs               # @tailwindcss/postcss
+├── eslint.config.mjs
 ├── tsconfig.json
 └── package.json
 ```
@@ -154,7 +188,7 @@ NEXT_PUBLIC_API_BASE_URL=http://localhost:8000
 - Reads `process.env.NEXT_PUBLIC_API_BASE_URL` for base URL.
 - Reads JWT token from `localStorage` on each call (never hardcoded).
 - Automatically attaches `Authorization: Bearer <token>` to every request.
-- On `401 Unauthorized`: clears token from storage, dispatches logout in `useAuthStore`, and redirects to `/login`.
+- On `401 Unauthorized` for an authenticated request: clears the stored token and calls the registered unauthorized handler (`useAuthStore.logout('expired')`); `useAuthGuard` then redirects to `/login`.
 - Normalizes HTTP errors into typed `ApiError` objects with `status` and `message` fields.
 - Never exposes raw backend stack traces to the user.
 
@@ -330,58 +364,92 @@ export interface DocumentDeleteResponse {
 
 ## 6. State Management
 
-### 6.1 `useAuthStore` (Zustand)
+Server data is owned by **TanStack Query**; Zustand holds only browser state.
+Components never call `services/*` directly: they use the hooks in `hooks/queries/`.
+
+### 6.1 TanStack Query
+
+**Provider**: `app/providers.tsx` (client component) wraps the app in
+`QueryClientProvider`, one browser-wide `QueryClient` (a fresh one per server render).
+Devtools render in development only.
+
+**Defaults** (`lib/query-client.ts`):
+- `staleTime: 30s`. Cached data is shown instantly when revisiting a screen, then refreshed.
+- `retry`: never for 4xx or aborted requests; at most 1 retry for network/5xx errors.
+- Mutations never retry (sending a message costs an LLM call).
+
+**Query keys** (`lib/query-keys.ts`):
+```
+['auth', 'me']
+['sessions']                          list
+['sessions', id, 'messages']          history of one session
+['documents', 'list', params]         paginated list
+['documents', 'detail', id]
+```
+
+**Hooks** (`hooks/queries/`):
+
+| Hook | Backend | Cache behaviour |
+|---|---|---|
+| `useSessionsQuery()` | `GET /sessions` | Sorted by `updated_at` desc; all statuses kept |
+| `useCreateSession()` | `POST /sessions` | Inserts the new session into `['sessions']` |
+| `useActivateSession()` | `POST /sessions/{id}/activate` | Invalidates `['sessions']` (statuses change) |
+| `useMessagesQuery(id)` | `GET /sessions/{id}/messages` | **Disabled while a send for that session is in flight** (prevents the race below) |
+| `useSendMessage(id)` | `POST /sessions/{id}/messages` | `onMutate`: appends an optimistic user message. `onSuccess`: replaces it with the server's `user_message` + `assistant_message`. `onError`: rolls back. `onSettled`: invalidates `['sessions']`. Definition shared via `sendMessageMutationOptions()` |
+| `useStartConversation()` | `POST /sessions` then `POST /sessions/{id}/messages` | Creates the session, starts the send through a `MutationObserver` with the shared options (keeps running after `/chat` unmounts), navigates to `/chat/{id}` immediately |
+| `useDocumentsQuery(params)` | `GET /documents` | Keeps previous page visible while paginating |
+| `useDocumentDetailQuery(id)` | `GET /documents/{id}` | |
+| `useUploadDocument()` | `POST /documents/upload` | Invalidates `['documents']` |
+| `useDeleteDocument()` | `DELETE /documents/{id}` | Optimistically removes the row; rolls back on error; invalidates `['documents']` |
+
+**First-message race**: when `/chat` creates a session and navigates to `/chat/[id]`,
+the send mutation has already put the optimistic question into
+`['sessions', id, 'messages']`. The `[id]` page's history query stays disabled while
+that send is pending, so it cannot overwrite the in-flight question. When the send
+succeeds, the cache already holds the complete history and is fresh, so no refetch is needed.
+
+### 6.2 `useAuthStore` (Zustand)
 ```
 State:
-  user: UserResponse | null
+  status: 'initializing' | 'authenticated' | 'unauthenticated'
   token: string | null
-  isAuthenticated: boolean
+  user: UserResponse | null
 
 Actions:
-  login(token, user)      → store token in localStorage; set state
-  logout()                → clear localStorage; clear state; redirect /login
-  checkAuth()             → on app mount: validate stored token via GET /auth/me
-                            if valid: restore user state
-                            if invalid/expired: auto logout
+  initialize()            → on app mount (client only): read stored token;
+                            none or expired → unauthenticated;
+                            else GET /auth/me → authenticated, or logout if invalid
+  login(email, password)  → POST /auth/token, store token, GET /auth/me, authenticated
+  logout(reason?)         → clear token + user, clear the whole query cache,
+                            status = unauthenticated ('expired' also shows a toast)
 ```
+- The API client's 401 handler is wired to `logout('expired')` (§4.2).
+- A timer logs the user out when the JWT's `exp` passes (30 min), so an idle tab
+  also returns to `/login` (acceptance checklist).
+- Redirects are done by `useAuthGuard`, which reacts to `status`, not by the store.
 
-### 6.2 `useChatStore` (Zustand)
+### 6.3 `useChatUiStore` (Zustand)
 ```
 State:
-  sessions: SessionResponse[]
-  currentSessionId: string | null
-  messages: MessageResponse[]
-  pendingMessage: { sessionId: string; content: string } | null   ← in-flight question (optimistic)
-  isSending: boolean
-  activeCitationSourceId: string | null   ← which [SN] is highlighted in Sources panel
+  activeCitationSourceId: string | null   ← which [SN] is highlighted
+  activeCitationMessageId: string | null  ← which answer the citation belongs to
+  sourcesPanelOpen: boolean
 
 Actions:
-  loadSessions()                  → GET /sessions
-  setCurrentSession(id)           → updates currentSessionId + loads messages
-  loadMessages(sessionId)         → GET /sessions/{id}/messages
-                                    must NOT clear/overwrite while pendingMessage.sessionId === sessionId;
-                                    merge server history with the optimistic message instead
-  sendMessage(sessionId, content) → set pendingMessage + isSending, POST /sessions/{id}/messages,
-                                    then append user_message + assistant_message and clear pendingMessage
-  appendMessage(message)          → adds message to messages array locally
-  setActiveCitation(sourceId)     → opens + scrolls Sources panel
-  clearChat()                     → reset messages + currentSessionId
+  setActiveCitation(messageId, sourceId) → opens + scrolls the Sources panel
+  closeSources(), reset()
+```
+Sidebar open/collapsed (desktop) and drawer (mobile) state is owned by the shadcn
+`SidebarProvider`; the desktop preference persists in the `sidebar_state` cookie.
+```
 ```
 
-### 6.3 `useDocumentStore` (Zustand)
-```
-State:
-  documents: DocumentSummary[]
-  total: number
-  isLoading: boolean
-  isUploading: boolean
-  error: string | null
-
-Actions:
-  fetchDocuments(params?)         → GET /documents
-  uploadDocument(file: File)      → POST /documents/upload
-  deleteDocument(id)              → DELETE /documents/{id}; refresh list
-```
+### 6.4 `useAuthGuard`
+- Protected pages (`/chat`, `/chat/[id]`, `/documents`): render nothing while
+  `initializing`; `router.replace('/login')` when `unauthenticated`.
+- Guest pages (`/login`, `/register`): `router.replace('/chat')` when `authenticated`.
+- Protected content (and therefore every query) renders only on the client after
+  authentication is confirmed, so no query runs during Next.js prerendering.
 
 ---
 
@@ -405,26 +473,29 @@ Actions:
 
 ### 7.3 New Chat Page (`/chat`)
 **Welcome / empty state screen.**
-- Displays ContextIQ logo + heading: **"What would you like to know?"**
-- Sub-heading: *"Ask questions about your documents and get AI-powered answers with cited sources."*
-- 4 Suggested Prompt Cards (clicking pre-fills chat input):
-  1. "Summarize the main points of an uploaded document"
-  2. "What is the company leave and attendance policy?"
-  3. "Explain the key terms in the uploaded agreement"
-  4. "What are the latest guidelines for remote work?"
-- Prominent `ChatInput` at the bottom.
+- Displays the ContextIQ logo mark + heading: **"A clearer way to work with your knowledge."**
+- Sub-heading: *"Ask questions, explore your files, and get answers grounded in your documents."*
+- 4 Suggested Prompt Cards in a 2×2 grid (one column on phones). Each shows a short label;
+  clicking pre-fills the chat input with the start of a question to complete (caret at the end):
+  1. "Summarize a document" → *"Summarize the main points of the document about "*
+  2. "Find a specific detail" → *"Find where the documents mention "*
+  3. "Compare two documents" → *"Compare what the documents say about "*
+  4. "Explain a key concept" → *"Explain the concept of "*
+- `ChatInput` pinned at the bottom (max width 672px on this screen).
 - **First message send flow**:
   1. `POST /sessions` with `title = content.slice(0, 50)` (backend max: 80 chars).
-  2. `useChatStore.sendMessage(session.id, content)`: sets `pendingMessage`, shows the optimistic user bubble and `TypingIndicator`, and starts `POST /sessions/{id}/messages`.
+  2. `useSendMessage(session.id).mutate(content)`: adds the optimistic user bubble to the session's message cache, shows `TypingIndicator`, and starts `POST /sessions/{id}/messages`.
   3. `router.push('/chat/' + session.id)`, with no full reload.
-  4. The `/chat/[sessionId]` page sees `pendingMessage` for this session and **skips** its mount-time activate and history fetch (the session is brand new and the send call activates it server-side). This avoids a race where the history fetch overwrites the in-flight question.
+  4. The `/chat/[sessionId]` page sees the pending send for this session: its history query stays disabled and it skips the activate call (the send activates the session server-side). See §6.1, "First-message race".
 
 ### 7.4 Active Chat Page (`/chat/[sessionId]`)
-- On mount (skipped if `pendingMessage.sessionId === sessionId`, see §7.3):
+- On mount (skipped while a send for this session is pending, see §7.3):
   1. `POST /sessions/{sessionId}/activate`: activate this session (the backend sets the user's other sessions to `archived`).
   2. `GET /sessions/{sessionId}/messages`: load history.
   3. Auto-scroll to bottom.
   4. On `404` → toast "Conversation not found." and redirect to `/chat`.
+     A malformed (non-UUID) id gets the same treatment without a request: the backend
+     answers malformed ids with `422`, not `404`.
 - Renders all messages chronologically.
 
 **User message bubble**: slate-800 background, full content text.
@@ -441,36 +512,51 @@ Actions:
 - Auto-resizing textarea; grows up to 6 visible rows, then scrolls.
 - `Enter` → send message.
 - `Shift+Enter` → insert newline.
-- Disabled while `isSending === true`.
+- Disabled (and dimmed) while `isSending === true`; an empty question only disables the send button.
+- Bottom row: **"+ Attach document"** (left) opens the upload dialog (§7.7; the file joins the
+  shared knowledge base) and the square send button (right). Character counter near the limit.
+- Disclaimer under the box: *"ContextIQ can make mistakes. Verify important information in the cited source."*
+- "Answer from selected sources" (in the design mockup) is **not** implemented: the backend's
+  `SendMessageRequest` has no source filter.
 - Clear input after successful submission.
 - Loading state → `TypingIndicator` (3-dot pulse animation) appended to message list.
 
 **No simulated streaming**. The backend returns a complete JSON response. Never animate character-by-character output.
 
 ### 7.5 Sidebar
-- **Logo area**: ContextIQ wordmark + icon.
-- **New Chat button** → navigates to `/chat`; calls `useChatStore.clearChat()`.
-- **Recent Conversations** list:
+Built on the shadcn `sidebar` component (`collapsible="icon"`), with `Ctrl/⌘+B` to toggle.
+- **Logo area**: ContextIQ icon (filled `primary` square) + wordmark, aligned with the 64px header.
+- **New chat** (plain navigation row with a `+` icon, not a filled button) → navigates to `/chat`; calls `useChatUiStore.reset()`.
+- **"RECENT"** conversations list (small uppercase label):
   - Loaded from `GET /sessions` on sidebar mount.
   - Sorted by `updated_at` descending.
   - Show **all** sessions regardless of `status`. The backend automatically sets every non-current session to `archived` on activate, so filtering by `status === 'active'` would hide all past chats.
-  - Shows: session title + message count badge.
-  - Active session: indigo left border highlight, based on the current route `sessionId` (not on `status`).
+  - Shows the session title only (muted text, no icon or message count), truncated with "…".
+  - Active session: grey (`sidebar-accent`) row background, based on the current route `sessionId` (not on `status`).
   - Click → `router.push('/chat/' + session.id)`.
 - **Navigation**:
-  - 💬 Chat → `/chat`
   - 📄 Documents → `/documents`
+  - No separate "Chat" item: it duplicated **New Chat** and the conversation list, which already lead to the chat pages.
 - **Bottom**:
-  - User email (from `useAuthStore.user.email`).
+  - User email (from `useAuthStore.user.email`) with an initial avatar; the backend has no
+    display name, so the mockup's name/"workspace" lines are not shown.
+  - Menu: **Theme** (Light / Dark / System) and Log out.
   - Logout button → `useAuthStore.logout()`.
 - **Collapsible** on desktop (icon-only 64px mode).
 - **Mobile**: hidden behind hamburger button in `Header`; opens as a slide-over drawer.
 
 ### 7.6 Sources Panel (Right Side)
-- **Visible**: only when `currentSession` has an assistant message with `citations.length > 0`.
-- **Desktop**: Fixed right panel (320px), appears alongside the chat.
-- **Mobile**: Bottom sheet / slide-over drawer, triggered by **"View Sources"** button in the assistant message footer.
-- Clicking `[S1]` in the chat → `useChatStore.setActiveCitation('S1')` → panel opens + scrolls to that `CitationCard`.
+- **Visible**: only after the user opens it, and only for an answer with `citations.length > 0`.
+  It shows the sources of one answer at a time; it is rendered by `ConversationView`
+  (which owns the messages), not by `AppShell`.
+- **Desktop (≥1024px)**: Fixed right panel (320px), alongside the chat. Close button or `Esc`.
+  (Below 1024px a 320px panel would squeeze the chat, so the drawer is used instead.)
+- **Smaller screens**: slide-over drawer from the right (shadcn `sheet`).
+- Every answer with citations has a **"View sources (n)"** button under it (all screen sizes).
+- Clicking `[S1]` in the chat → `useChatUiStore.setActiveCitation(messageId, 'S1')` → panel opens + scrolls to that `CitationCard`.
+- Only markers matching the message's `citations` become chips; unknown markers and
+  markers inside code stay plain text.
+- Switching conversations closes the panel.
 
 **CitationCard** content:
 - `[S1]` label badge (indigo).
@@ -483,13 +569,20 @@ Actions:
   - `superseded` → Red: "Superseded"
   - `future` → Blue: "Not yet effective"
   - `undated` / `null` → no badge
-- Show `effective_date` / `expiry_date` when present.
+- Show `effective_date` / `expiry_date` when present (formatted, e.g. "Jan 1, 2026").
+- Document title (from metadata, falls back to the filename) above the filename.
+- When `has_competing_versions`, list `competing_versions` ("Versions found: …"; the
+  backend sends version labels such as `"2 (effective 2025-06-01)"`).
 
 > Note: Retrieved chunk text snippets are NOT returned by the messages API and will NOT be shown.
 
 ### 7.7 Document Management Page (`/documents`)
-- Page heading: **"Knowledge Base"**, with a subtitle saying the documents are shared by all users.
-- Calls `GET /documents` on mount.
+- Page heading: **"Knowledge Base"** (the header title), with a "Documents" section heading and a
+  subtitle saying the documents are shared by all users, plus the document count.
+- Calls `GET /documents` on mount, 50 per page (`DOCUMENTS_PAGE_SIZE`; backend max 200), with
+  Previous/Next when there are more. The list refreshes every 5 s while any document is
+  `queued` or `processing`.
+- Loading skeleton; load error → message + "Try again" (raw backend detail never shown).
 
 **Empty state** (zero documents):  
 Document icon + *"No documents yet. Upload your first document to get started."* + Upload button.
@@ -497,28 +590,34 @@ Document icon + *"No documents yet. Upload your first document to get started."*
 **Document Table** columns:
 - File type icon (by extension: PDF, DOCX, TXT, Markdown)
 - Filename (from `DocumentSummary.filename`)
-- Status badge: `completed` (green), `processing` (yellow + spinner), `failed` (red)
+- Status badge: `completed` (green), `processing` (yellow + spinner), `queued` (grey), `failed` (red;
+  `status_message` shown under the filename)
 - Chunk count
 - Uploaded date (formatted as "Nov 18, 2026")
 - Delete button (trash icon)
+- Below 640px the status, chunks and date move under the filename (only Document + delete columns).
 
 **Upload Document**:
-- Triggered by button → opens `DocumentUploadZone` (modal overlay or inline).
+- Triggered by the page button or "Attach document" in the chat input → opens `UploadDocumentDialog` (`DocumentUploadZone` in a modal). One file at a time.
 - Drag-and-drop area OR click to pick file.
 - **Supported extensions** (enforced client-side before upload): `.pdf`, `.docx`, `.txt`, `.md`, `.markdown`.
 - Validation before sending:
-  - Reject unsupported extension → error toast: *"Only PDF, DOCX, TXT, and Markdown files are supported."*
-  - Reject 0-byte file → error toast: *"The selected file is empty."*
+  - Reject unsupported extension → inline error in the dialog (§9): *"Only PDF, DOCX, TXT, and Markdown files are supported."*
+  - Reject 0-byte file → inline error: *"The selected file is empty."*
+  - No client-side size limit (the backend has none).
 - Calls `POST /documents/upload` as `multipart/form-data` with form field name `file`.
-- Shows loading spinner during upload.
+- Shows loading spinner during upload. The backend indexes the file inside the request, so the
+  dialog cannot be closed until it finishes (the result is reported there).
 - On success: show success toast with `message` from response, refresh document list.
-- On `422` from backend: show backend `detail` message.
-- On `500`: show *"Document upload failed. Please try a different file."*
+- On `422` from backend: toast with the backend `detail` message; the dialog stays open.
+- On `500`: toast *"Document upload failed. Please try a different file."*
 
 **Delete Document**:
 - Click trash icon → `DeleteConfirmDialog` modal.
 - Modal text: *"Delete [filename]? This will remove the document and all its indexed chunks from the shared knowledge base for all users. This cannot be undone."*
-- **Confirm** → `DELETE /documents/{id}` → remove from list locally + show success toast.
+- **Confirm** → `DELETE /documents/{id}` → remove from list locally at once (restored if the
+  delete fails) + show success toast. `404` → toast "Document not found." and the list resyncs.
+  Deleting the only row of the last page goes back one page.
 - **Cancel** → close modal.
 
 ---
@@ -526,6 +625,17 @@ Document icon + *"No documents yet. Upload your first document to get started."*
 ## 8. Visual Design Decisions
 
 ### 8.1 Color Tokens
+These values are mapped onto the shadcn/ui semantic tokens (`--background`, `--card`,
+`--border`, `--primary`, `--muted-foreground`, `--destructive`, ...) in `globals.css`,
+plus custom `--success` / `--warning` / `--info` tokens. Components use the semantic
+classes (`bg-background`, `text-muted-foreground`, `bg-primary`), never raw palette classes.
+**Two themes** (switched from the user menu, §8.4):
+
+*Light (default, from the design mockup)* — monochrome: white background, sidebar and cards;
+near-black `primary` (buttons, logo mark, active citation chip); neutral grey borders
+(`oklch(0.922 0 0)`), muted text and hover rows. Status colours: green / amber / red / blue (600 shades).
+
+*Dark (opt-in)* — the original palette:
 ```
 Background:         slate-950   (main app background)
 Surface (cards):    slate-900   (sidebar, panels, message bubbles)
@@ -539,6 +649,13 @@ Warning:            amber-500   (outdated freshness, abstention box)
 Danger:             red-500     (failed status, superseded freshness, delete)
 ```
 
+### 8.1a Logo
+Source: `client/src/assets/ContextIQ_Logo.png`. Derived transparent PNGs (light + dark copies):
+`logo-full-*` (mark + "ContextIQ" + tagline) on sign-in/register; `logo-wordmark-*` (no tagline)
+in the expanded sidebar; `logo-mark*` (the "C" with three dots, no sparkles) in the collapsed rail,
+the welcome screen, the assistant avatar and `app/favicon.ico`. `components/common/Logo.tsx`
+renders both theme copies and shows one with `dark:` classes (correct on first paint).
+
 ### 8.2 Layout Dimensions
 - **Sidebar**: 260px expanded / 64px collapsed (icon-only)
 - **Sources Panel**: 320px fixed right (desktop)
@@ -546,16 +663,21 @@ Danger:             red-500     (failed status, superseded freshness, delete)
 - **Chat input bar**: Sticky bottom; full chat area width
 
 ### 8.3 Typography
-- Font: **Inter** (via `next/font/google`)
+- Font: **DM Sans** (via `next/font/google`, `--font-sans`), matching the design mockup; Geist Mono for code
 - Headings: `font-semibold`, `tracking-tight`
 - Body/messages: `text-sm` (sidebar) / `text-base` (chat), `leading-relaxed`
-- Code blocks inside AI answers: `font-mono`, `bg-slate-800`, rounded
+- Code blocks inside AI answers: `font-mono`, `bg-muted`, `text-foreground`, rounded (readable in both themes)
+- Header title: `text-lg font-semibold` in a 64px header
 
 ### 8.4 Interaction Rules
 - Transitions: `150ms ease-out` maximum — no heavy animations.
-- **Dark mode only** in this release. Light mode is a future enhancement.
-- Hover states: `hover:bg-slate-800` on interactive list items.
-- Focus rings: `focus-visible:ring-2 focus-visible:ring-indigo-500`.
+- **Themes**: light by default; Light / Dark / System in the user menu (`next-themes`,
+  `attribute="class"`, saved in localStorage under `contextiq.theme`, applied to `<html>`
+  before first paint so there is no flash). Components use semantic tokens only, so both
+  themes come from `globals.css`; anything theme-specific uses the `dark:` variant
+  (e.g. `dark:prose-invert` for answers).
+- Hover states: `hover:bg-accent` on interactive list items.
+- Focus rings: `focus-visible:ring-2 focus-visible:ring-ring`.
 - No excessive gradients — solid fills only.
 - No decorative illustration overload.
 
@@ -657,13 +779,13 @@ npm run build && npm start
 
 | Phase | Deliverable | Key Files |
 |---|---|---|
-| **1** | Next.js scaffold, Tailwind setup, folder structure, `.env.example` | `package.json`, `tailwind.config.ts`, `tsconfig.json`, `globals.css` |
+| **1** | Next.js scaffold, Tailwind v4, shadcn/ui init + base components, ContextIQ theme, `.env.example` | `package.json`, `components.json`, `tsconfig.json`, `app/globals.css`, `components/ui/*` |
 | **2** | TypeScript types, API client, 3 service modules | `types/api.ts`, `services/api.ts`, `auth.service.ts`, `chat.service.ts`, `document.service.ts` |
-| **3** | Zustand stores + auth guard hook | `store/*.ts`, `hooks/useAuthGuard.ts` |
-| **4** | Login + Register pages with form validation | `app/login/page.tsx`, `app/register/page.tsx`, `components/auth/` |
-| **5** | App Shell + Sidebar + Header (with real session list) | `components/layout/AppShell.tsx`, `Sidebar.tsx`, `Header.tsx` |
-| **6** | New Chat welcome screen + suggested prompts | `app/chat/page.tsx`, `components/chat/SuggestedPrompts.tsx` |
-| **7** | Active chat page (all 3 assistant states) | `app/chat/[sessionId]/page.tsx`, all `components/chat/` |
+| **3** | TanStack Query provider, query keys + hooks; Zustand auth + chat UI stores; auth guard | `app/providers.tsx`, `lib/query-*.ts`, `hooks/queries/*`, `store/*.ts`, `hooks/useAuthGuard.ts` |
+| **4** | Login + Register pages (React Hook Form + Zod + shadcn `field`), root redirect, temporary protected `/chat` | `app/login/page.tsx`, `app/register/page.tsx`, `app/page.tsx`, `components/auth/`, `lib/validation/auth.ts` |
+| **5** | App shell (shadcn `sidebar`) + Header + real session list; `(app)` route group | `app/(app)/layout.tsx`, `components/layout/*`, `hooks/useCurrentSession.ts` |
+| **6** | New Chat welcome screen, suggested prompts, `ChatInput`, first-message flow | `app/(app)/chat/page.tsx`, `components/chat/{NewChatScreen,SuggestedPrompts,ChatInput}.tsx`, `hooks/queries/useStartConversation.ts` |
+| **7** | Active chat page (all 3 assistant states), markdown, follow-ups, scroll manager | `app/(app)/chat/[sessionId]/page.tsx`, `components/chat/*`, `lib/messages.ts` |
 | **8** | Sources panel + inline citation chips + freshness badges | `components/sources/` |
 | **9** | Document management page (table, upload, delete) | `app/documents/page.tsx`, `components/documents/` |
 | **10** | End-to-end testing against live backend, TypeScript cleanup, responsive polish | All files |
